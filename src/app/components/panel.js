@@ -223,7 +223,7 @@ function Selection(props){
 					};
 
 					// Save project
-					const response = await saveProject(body, 'create');
+					const response = await saveProject(body);
 
 					// Condiitional if data is saved
 					if (response.ok){

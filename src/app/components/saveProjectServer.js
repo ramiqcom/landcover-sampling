@@ -11,6 +11,7 @@ export default async function main(body){
 
 	// Project table address
 	const table = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
+	console.log(table);
 
 	// Process information
 	const {
@@ -26,6 +27,7 @@ export default async function main(body){
 	// Check query to insert or update
 	const [ queryJob ] = await bigquery.createQueryJob(`SELECT * FROM ${table} WHERE project_id = ${projectId}`);
 	const [ queryRows ] = await queryJob.getQueryResults();
+	console.log(queryRows);
 
 	// Query save
 	let querySave;
@@ -53,6 +55,7 @@ export default async function main(body){
 	// Status
 	try {
     const [ metadata ] = await bigquery.job(updateJob.id).getMetadata();
+		console.log(metadata);
     if (metadata.status.state == 'DONE'){
 			return { message: 'Project successfully saved', ok: true };
 		};
