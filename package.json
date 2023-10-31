@@ -9,11 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google-cloud/bigquery": "^7.3.0",
+    "@google-cloud/promisify": "^4.0.0",
+    "@google/earthengine": "^0.1.376",
+    "@turf/turf": "^6.5.0",
+    "leaflet": "^1.9.4",
+    "next": "13.5.6",
+    "node-self": "^1.0.2",
+    "pify": "^6.1.0",
     "react": "^18",
     "react-dom": "^18",
-    "next": "13.5.6"
+    "react-leaflet": "^4.2.1",
+    "react-select": "^5.7.7"
   },
   "devDependencies": {
+    "encoding": "^0.1.13",
     "eslint": "^8",
     "eslint-config-next": "13.5.6"
   }
