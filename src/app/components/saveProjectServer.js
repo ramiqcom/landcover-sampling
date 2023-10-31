@@ -50,7 +50,7 @@ export default async function main(body){
 	const [ updateJob ] = await bigquery.createQueryJob(querySave);
 
 	// Delay for 1 seconds
-	await setTimeout(1000);
+	await setTimeout(2000);
 
 	// Status
 	try {
