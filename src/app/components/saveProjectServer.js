@@ -1,5 +1,6 @@
 'use server';
 
+import { BigQuery } from '@google-cloud/bigquery';
 // Import packages
 import bq from './bq';
 import { setTimeout } from 'node:timers/promises';
@@ -11,7 +12,6 @@ export default async function main(body){
 
 	// Project table address
 	const table = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
-	console.log(table);
 
 	// Process information
 	const {
@@ -27,7 +27,6 @@ export default async function main(body){
 	// Check query to insert or update
 	const [ queryJob ] = await bigquery.createQueryJob(`SELECT * FROM ${table} WHERE project_id = ${projectId}`);
 	const [ queryRows ] = await queryJob.getQueryResults();
-	console.log(queryRows);
 
 	// Query save
 	let querySave;
@@ -49,17 +48,27 @@ export default async function main(body){
 	// Run job
 	const [ updateJob ] = await bigquery.createQueryJob(querySave);
 
-	// Delay for 1 seconds
-	await setTimeout(2000);
-
 	// Status
 	try {
-    const [ metadata ] = await bigquery.job(updateJob.id).getMetadata();
-		console.log(metadata);
-    if (metadata.status.state == 'DONE'){
-			return { message: 'Project successfully saved', ok: true };
-		};
+		await setTimeout(1000);
+    return await checkStatus(bigquery, updateJob); 
   } catch (error) {
-    return { message: 'Project fail to save', error, ok: false }
+    return { message: 'Project fail to save', error: error.message, ok: false }
   };
+}
+
+/**
+ * Check status of query
+ * @param {BigQuery} bigquery 
+ * @param {BigQueryJob} job
+ */
+async function checkStatus(bigquery, job){
+	const [ metadata ] = await bigquery.job(job.id).getMetadata();
+
+	if (metadata.status.state == 'DONE'){
+		return { message: 'Project successfully saved', ok: true };
+	} else {
+		await setTimeout(1000);
+		return await checkStatus(bigquery, job);
+	};
 }
