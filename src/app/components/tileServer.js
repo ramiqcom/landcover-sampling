@@ -1,15 +1,10 @@
 'use server';
 
 // Import packages
-import pify from 'pify';
 import 'node-self';
 import ee from '@google/earthengine';
-
-// Promisify some function
-const eeCallback = { multiArgs: true, errorFirst: false };
-const auth = pify(ee.data.authenticateViaPrivateKey);
-const init = pify(ee.initialize);
-const mapid = pify(ee.data.getMapId, eeCallback);
+import pify from 'pify';
+import { auth, init, mapid } from './eePromise';
 
 // Main function
 export default async function main(body){
@@ -58,8 +53,8 @@ async function tile(body){
 	};
 
 	// Evaluated geometry
-	let evalRoi;
-	roi.evaluate(data => evalRoi = data);
+	const evaluateRoi = pify(roi.evaluate, { multiArgs: true, errorFirst: false }).bind(roi);
+	const [ geojson, error ] = await evaluateRoi();
 
 	// Visualized image
 	const visualized = visual(image, bands);
@@ -71,7 +66,7 @@ async function tile(body){
 	if (err) {
 		return { message: err, ok: false };
 	} else {
-		return { url: obj.urlFormat, geojson: evalRoi, ok: true };
+		return { url: obj.urlFormat, geojson, ok: true };
 	};
 }
 
@@ -89,10 +84,9 @@ function visual(image, bands){
     maxPixels: 1e13,
     reducer: ee.Reducer.percentile([1, 99])
   });
-  const bandVis = bands;
   const min = [];
   const max = [];
-  bandVis.map(band => {
+  bands.map(band => {
     min.push(percent.get(band + '_p1'));
     max.push(percent.get(band + '_p99'));
   });

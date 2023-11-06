@@ -1,0 +1,82 @@
+{
+	"hddf": {
+		"label": "High-density dryland forest",
+		"value": 11,
+		"palette": "darkgreen"
+	},
+	"mddf": {
+		"label": "Medium-density dryland forest",
+		"value": 12,
+		"palette": "forestgreen"
+	},
+	"hdsf": {
+		"label": "High-density swamp forest",
+		"value": 21,
+		"palette": "olive"
+	},
+	"mdsf": {
+		"label": "Medium-density swamp forest",
+		"value": 22,
+		"palette": "olivedrab"
+	},
+	"hdmf": {
+		"label": "High-density mangrove forest",
+		"value": 31,
+		"palette": "indigo"
+	},
+	"mdmf": {
+		"label": "Medium-density mangrove forest",
+		"value": 32,
+		"palette": "slateblue"
+	},
+	"llv": {
+		"label": "Low-level vegetation",
+		"value": 40,
+		"palette": "lightgreen"
+	},
+	"illv": {
+		"label": "Inundated low-level vegetation",
+		"value": 50,
+		"palette": "teal"
+	},
+	"built": {
+		"label": "Built-up",
+		"value": 60,
+		"palette": "lightcoral"
+	},
+	"bare": {
+		"label": "Bareland",
+		"value": 70,
+		"palette": "burlywood"
+	},
+	"palmoil": {
+		"label": "Palm oil",
+		"value": 80,
+		"palette": "orangered"
+	},
+	"coconut": {
+		"label": "Coconut",
+		"value": 90,
+		"palette": "aquamarine"
+	},
+	"wood": {
+		"label": "Wood shrub",
+		"value": 100,
+		"palette": "limegreen"
+	},
+	"rubber": {
+		"label": "Rubber",
+		"value": 101,
+		"palette": "gold"
+	},
+	"timber": {
+		"label": "Timber",
+		"value": 102,
+		"palette": "sienna"
+	},
+	"water": {
+		"label": "Water",
+		"value": 110,
+		"palette": "lightskyblue"
+	}
+}

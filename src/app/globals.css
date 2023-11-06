@@ -1,4 +1,5 @@
 @import url('../../node_modules/leaflet/dist/leaflet.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
 
 body {
 	margin: 0;
@@ -8,19 +9,42 @@ body {
 }
 
 input {
-	height: 3vh;
+	min-height: 3vh;
 	width: 100%;
 }
 
 button {
-	height: 3vh;
+	min-height: 3vh;
 	width: 100%;
+	border-radius: 100vh;
+	background-color: #1C2D24;
+  color: white;
+  font-size: medium;
+  border: 0;
+}
+
+button:disabled {
+  background-color: transparent;
+  color: #141F19;
+  border: 1px solid #141F19;
+}
+
+button:hover {
+  background-color: #384E40;
 }
 
 .center1 {
 	align-items: center;
 	align-content: center;
 	justify-content: center;
+}
+
+.fill-vertical {
+	align-items: stretch;
+}
+
+.start {
+	justify-content: flex-start;
 }
 
 .flexible {
@@ -35,13 +59,75 @@ button {
 	gap: 2vh;
 }
 
+.wide-space {
+	justify-content: space-between;
+}
+
+.message {
+	align-self: center;
+	text-align: center;
+}
+
+.select-button {
+	border-radius: 0;
+	border: none !important
+}
+
+.select-button:enabled {
+	background-color: #F9F5F0;
+	color: #1C2D24;
+}
+
+.select-button:disabled {
+	background-color: #1C2D24;
+	color: #F9F5F0;
+}
+
+.select-button:enabled:hover {
+	background-color: #f2eadf;
+}
+
+.button-parameter {
+	background-color: #F9F5F0;
+	color: #1C2D24;
+}
+
+.button-parameter:disabled {
+  background-color: transparent;
+  color: #F9F5F0;
+  border: 1px solid #F9F5F0;
+}
+
+.button-parameter:enabled:hover {
+	background-color: #f2eadf;
+}
+
+.fa-location-arrow {
+	flex: 1;
+}
+
+.select-menu {
+	color: black;
+}
+
+#menu {
+	padding: 2vh;
+	background-color: #1C2D24;
+	color: #F9F5F0
+}
+
+#button-menu {
+	gap: 0
+}
+
 #map {
 	flex: 4;
 }
 
 #panel {
 	flex: 1;
-	padding: 2%;
+	padding: 3vh;
+	background-color: #F9F5F0;
 }
 
 #bands {
@@ -51,10 +137,20 @@ button {
 #title-panel {
 	font-size: 3vh;
 	font-weight: bold;
-	margin-bottom: 5%;
+	margin-bottom: 3%;
 }
 
-.message {
-	align-self: center;
-	text-align: center;
+#layers {
+	padding: 3vh;
+	position: fixed;
+	z-index: 99999;
+	margin-top: 10vh;
+	margin-left: 2vh;
+	width: 20vh;
+	height: 30vh;
+	background-color: white;
+}
+
+#basemap {
+	gap: 0;
 }

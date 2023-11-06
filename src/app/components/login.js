@@ -5,8 +5,8 @@ import loginServer from './loginServer';
 export default function Login(props){
 	const { setAppState, setLoginPage, loginPage, username, setUsername } = props;
 
-	const [ password, setPassword ] = useState("");
-	const [ message, setMessage ] = useState("");
+	const [ password, setPassword ] = useState(undefined);
+	const [ message, setMessage ] = useState(undefined);
 	const [ disabled, setDisabled ] = useState(false);
 	const [ messageColor, setMessageColor ] = useState('blue');
 
@@ -15,12 +15,12 @@ export default function Login(props){
 			
 			<div id='username' className="flexible vertical">
 				Username
-				<input value={username} disabled={disabled} onChange={e => setUsername(e.target.value) }/>
+				<input value={username} disabled={disabled} onInput={e => setUsername(e.target.value) }/>
 			</div>
 			
 			<div id='password' className="flexible vertical">
 				Password
-				<input value={password} disabled={disabled} type='password' onChange={e => setPassword(e.target.value) }/>
+				<input value={password} disabled={disabled} type='password' onInput={e => setPassword(e.target.value) }/>
 			</div>
 
 			<div id='login-button'>

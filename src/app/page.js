@@ -1,14 +1,15 @@
 'use client';
 
-import Image from 'next/image'
 import Script from 'next/script'
 import initMap from './components/map';
 import Panel from './components/panel';
+import Layers from './components/layer';
 
 // Main react function
 export default function Home() {
   return (
     <>
+      <Layers />
       <Canvas />
       <Panel />
       <Script

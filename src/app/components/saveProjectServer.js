@@ -1,7 +1,7 @@
 'use server';
 
-import { BigQuery } from '@google-cloud/bigquery';
 // Import packages
+import { BigQuery } from '@google-cloud/bigquery';
 import bq from './bq';
 import { setTimeout } from 'node:timers/promises';
 
@@ -61,6 +61,7 @@ export default async function main(body){
  * Check status of query
  * @param {BigQuery} bigquery 
  * @param {BigQueryJob} job
+ * @returns {Promise.<{ message: String, ok: Boolean }>}
  */
 async function checkStatus(bigquery, job){
 	const [ metadata ] = await bigquery.job(job.id).getMetadata();
