@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import Login from './login';
-import { Map, Tile, Features, Point, Labelled } from './map';
+import { Map, Tile, Features, Point } from './map';
 import tile from './tileServer';
 import saveProject from './saveProjectServer';
 import sampleServer from './sampleServer';
@@ -631,13 +631,8 @@ function Sampling(props){
 					setSampleFeatures(features);
 
 					// Add labelled sample
-					Labelled.clearLayers();
-					let labelledFeatures = features.features.filter(feat => feat.properties.validation);
-					labelledFeatures = {
-						type: 'FeatureCollection',
-						features: labelledFeatures
-					};
-					Labelled.addData(labelledFeatures);
+					Features.clearLayers();
+					Features.addData(features);
 				}}
 				className='select-menu'
 				isDisabled={sampleSelectionDisabled}

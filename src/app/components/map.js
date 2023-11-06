@@ -3,7 +3,6 @@ export let Map;
 export let Features;
 export let Basemap;
 export let Tile;
-export let Labelled;
 export let Point;
 
 export default function initMap(map) {
@@ -20,11 +19,13 @@ export default function initMap(map) {
 
 	Tile = L.tileLayer("").addTo(Map);
 
-	Features = L.geoJSON([], { pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5 }) })
-		.addTo(Map);
-
-	Labelled = L.geoJSON([], { pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'green' }) })
-		.addTo(Map);
+	Features = L.geoJSON([], { pointToLayer: (feat, coord) => {
+		if (feat.properties.validation) {
+			return L.circleMarker(coord, { radius: 5, color: 'green' })
+		} else {
+			return L.circleMarker(coord, { radius: 5 })
+		};
+	}}).addTo(Map);
 
 	Point = L.geoJSON([], { pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'yellow' }) })
 		.addTo(Map);

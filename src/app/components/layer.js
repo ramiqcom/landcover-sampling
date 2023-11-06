@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Basemap as base, Tile, Features, Point, Labelled } from './map';
+import { Basemap as base, Tile, Features, Point } from './map';
 
 export default function Layers(prop){
 	return (
@@ -107,7 +107,8 @@ function LayerCheckbox(prop) {
 
 				<input type='checkbox' checked={labelledSampleCheckbox} disabled={sampleCheckboxDisabled} onChange={e => {
 					setLabelledSampleCheckbox(e.target.checked);
-					e.target.checked ? Labelled.setStyle({ opacity: 1, fillOpacity: 0.3 }) : Labelled.setStyle({ opacity: 0, fillOpacity: 0 });
+					const style = e.target.checked ? { opacity: 1, fillOpacity: 0.3 } : { opacity: 0, fillOpacity: 0 };
+					Features.eachLayer(layer => layer.feature.properties.validation ? layer.setStyle(style) : null);
 				}}/>
 
 				<div style={{ border: '3px solid green', borderRadius: '100%', height: '10px', width: '10px' }}></div>
@@ -118,7 +119,8 @@ function LayerCheckbox(prop) {
 
 				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacityLabelSample} disabled={sampleCheckboxDisabled} onChange={e => {
 					setOpacityLabelSample(e.target.value);
-					Labelled.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
+					const style = { opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 };
+					Features.eachLayer(layer => layer.feature.properties.validation ? layer.setStyle(style) : null);
 				}}/>
 			</div>
 				
