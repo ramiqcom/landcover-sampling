@@ -601,7 +601,7 @@ function Sampling(props){
 
 				<button className='fa fa-location-arrow button-parameter' disabled={sampleSelectionDisabled} onClick={() => {
 					const bounds = Point.getBounds();
-					Map.fitBounds(bounds);
+					Map.fitBounds(bounds, { maxZoom: 14 });
 				}}></button>
 			</div>
 
@@ -675,7 +675,7 @@ async function loadImage(year, region, [ red, green, blue ], setImageUrl, setIma
 		
 		// Zoom to tile
 		const geojson = L.geoJSON(result.geojson).getBounds();
-		Map.fitBounds(geojson);
+		Map.fitBounds(geojson, { maxZoom: 14 });
 
 		// Hide message
 		setMessage(undefined);
@@ -770,7 +770,7 @@ function changePointSample(features, value, setSelectedSampleFeatures){
 	Point.addData(selected);
 
 	// Zoom to the selected sample
-	Map.fitBounds(Point.getBounds());
+	Map.fitBounds(Point.getBounds(), { maxZoom: 14 });
 
 	return selected;
 }
