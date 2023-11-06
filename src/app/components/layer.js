@@ -72,23 +72,9 @@ function LayerCheckbox(prop) {
     selectedSampleCheckbox, setSelectedSampleCheckbox,
 	} = prop;
 
-	// Hide feature if the checkbox change
-	useEffect(() => {
-		if (Tile && Features && Point) {
-			// List of features in the map to show and hide
-			const mapObjects = [ Tile, Features, Point ];
-
-			// Map over the checkbox value
-			[ imageCheckbox, sampleCheckbox, selectedSampleCheckbox ].map((check, index) => {
-				if (index === 0) {
-					check ? mapObjects[index].options.opacity = 1 : mapObjects[index].options.opacity = 0; // Change opacity of the object
-					mapObjects[index].redraw() // Redraw if it is a tile
-				} else {
-					check ? mapObjects[index].setStyle({ opacity: 1 }) : mapObjects[index].setStyle({ opacity: 0 });
-				}				
-			});
-		}
-	}, [ imageCheckbox, sampleCheckbox, selectedSampleCheckbox ]);
+	const [ opacitySelected, setOpacitySelected ] = useState(1);
+	const [ opacitySample, setOpacitySample ] = useState(1);
+	const [ opacityImage, setOpacityImage ] = useState(1);
 
 	return (
 		<div className='flexible vertical'>
@@ -100,22 +86,49 @@ function LayerCheckbox(prop) {
 			<div className='flexible start center1'> 
 				<input type='checkbox' checked={selectedSampleCheckbox} disabled={selectedSampleCheckboxDisabled} onChange={e => {
 					setSelectedSampleCheckbox(e.target.checked);
+					e.target.checked ? Point.setStyle({ opacity: 1, fillOpacity: 0.3 }) : Point.setStyle({ opacity: 0, fillOpacity: 0 });
 				}}/> 
-				Selected sample 
+				
+				<div style={{ flex: 2 }}>
+					Selected sample 
+				</div>
+
+				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacitySelected} disabled={selectedSampleCheckboxDisabled} onChange={e => {
+					setOpacitySelected(e.target.value);
+					Point.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
+				}}/>
 			</div>
 
 			<div className='flexible start center1'> 
 				<input type='checkbox' checked={sampleCheckbox} disabled={sampleCheckboxDisabled} onChange={e => {
 					setSampleCheckbox(e.target.checked);
-				}}/> 
-				Sample 
+					e.target.checked ? Features.setStyle({ opacity: 1, fillOpacity: 0.3 }) : Features.setStyle({ opacity: 0, fillOpacity: 0 });
+				}}/>
+
+				<div style={{ flex: 2 }}>
+					Sample
+				</div>
+
+				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacitySample} disabled={sampleCheckboxDisabled} onChange={e => {
+					setOpacitySample(e.target.value);
+					Features.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
+				}}/>
 			</div>
 
 			<div className='flexible start center1'> 
 				<input type='checkbox' checked={imageCheckbox} disabled={imageCheckboxDisabled} onChange={e => {
 					setImageCheckbox(e.target.checked);
+					e.target.checked ? Tile.setOpacity(1) : Tile.setOpacity(0); // Change opacity of the object
 				}}/> 
-				Image 
+
+				<div style={{ flex: 2 }}>
+					Image
+				</div>
+
+				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacityImage} disabled={imageCheckboxDisabled} onChange={e => {
+					setOpacityImage(e.target.value);
+					Tile.setOpacity(e.target.value);
+				}} />
 			</div>
 		</div>
 	)
