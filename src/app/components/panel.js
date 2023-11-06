@@ -16,7 +16,7 @@ const lulcPalette = lulcArray.map(array => array[1].palette);
 const lulcValue = lulcArray.map(array => array[1].value);
 
 // Panel function as app handler
-export default function Panel(){
+export default function Panel(prop){
 	const [ loginPage, setLoginPage ] = useState('flex');
 	const [ appState, setAppState ] = useState('none');
 	const [ projectList, setProjectList ] = useState([]);
@@ -36,6 +36,7 @@ export default function Panel(){
 		username, setUsername,
 		featuresId, setFeaturesId,
 		selectedFeature, setSelectedFeature,
+		...prop
 	};
 
 	return (
@@ -297,7 +298,23 @@ function Selection(props){
 		setMessageColor,
 		selectionDisplay,
 		setRegionYearDisabled,
+		setImageCheckboxDisabled
 	} = props;
+
+	// Image url
+	const [ imageUrl, setImageUrl ] = useState(undefined);
+	const [ imageGeoJson, setImageGeoJson ] = useState(undefined);
+
+	// Useeffect if the image url changed
+	useEffect(() => {
+		if (Tile) {
+			if (imageUrl) {
+				setImageCheckboxDisabled(false);
+			} else {
+				setImageCheckboxDisabled(true);
+			}
+		};
+	}, [ imageUrl, imageGeoJson ]);
 
 	// Bands list
 	let bands = [ 'B2', 'B3', 'B4', 'B5', 'B6', 'B7' ];
@@ -338,7 +355,7 @@ function Selection(props){
 				]);
 
 				// Load image to map
-				await loadImage(year, region, [red, green, blue], setMessage, setMessageColor);
+				await loadImage(year, region, [red, green, blue], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
 
 				// Enable button again
 				toggleFeatures(false, [
@@ -359,7 +376,9 @@ function Sampling(props){
 		setMessage, setMessageColor,
 		setRegionYearDisabled,
 		sampleGenerationDisabled, setSampleGenerationDisabled,
-		sampleSelectionDisabled, setSampleSelectionDisabled
+		sampleSelectionDisabled, setSampleSelectionDisabled,
+		setSampleCheckboxDisabled,
+    setSelectedSampleCheckboxDisabled
 	} = props;
 
 	const [ sampleSet, setSampleSet ] = useState([]);
@@ -385,9 +404,9 @@ function Sampling(props){
 			setSampleName(selectedSampleSet.label);
 
 			if (selectedSampleSet.value) {
-				toggleFeatures(false, [ setSampleSelectionDisabled ]);
+				toggleFeatures(false, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
 			} else {
-				toggleFeatures(true, [ setSampleSelectionDisabled ]);
+				toggleFeatures(true, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
 			};
 		}
 	}, [ selectedSampleSet ]);
@@ -395,10 +414,10 @@ function Sampling(props){
 	// Do something and selected sample change
 	useEffect(() => {
 		if (selectedSample) {
-			toggleFeatures(false, [ setSampleSelectionDisabled ]);
+			toggleFeatures(false, [ setSampleSelectionDisabled, setSelectedSampleCheckboxDisabled ]);
 			changePointSample(sampleFeatures, selectedSample.value, setSelectedSampleFeatures);
 		} else {
-			toggleFeatures(true, [ setSampleSelectionDisabled ]);
+			toggleFeatures(true, [ setSampleSelectionDisabled, setSelectedSampleCheckboxDisabled ]);
 		}
 	}, [ selectedSample ]);
 
@@ -539,7 +558,7 @@ function Sampling(props){
  * @param {{ value: String, label: String }} green 
  * @param {{ value: String, label: String }} blue 
  */
-async function loadImage(year, region, [ red, green, blue ], setMessage, setMessageColor){
+async function loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor){
 	// Image load message
 	setMessage('Preparing image...');
 	setMessageColor('blue');
@@ -548,11 +567,15 @@ async function loadImage(year, region, [ red, green, blue ], setMessage, setMess
 	const body = {
 		year: year.value,
 		region: region.value,
-		bands: [red.value, green.value, blue.value]
+		bands: [ red.value, green.value, blue.value ]
 	};
 
 	// Load tile and geojson with server action
 	const result = await tile(body);
+
+	// Set the image url
+	setImageUrl(result.url);
+	setImageGeoJson(result.geojson);
 					
 	// Condiitonal if the function is success
 	if (result.ok){

@@ -13,6 +13,12 @@ input {
 	width: 100%;
 }
 
+input[type=checkbox] {
+	height: 2vh;
+	width: 2vh;
+	margin-right: 1vh;
+}
+
 button {
 	min-height: 3vh;
 	width: 100%;
@@ -35,8 +41,6 @@ button:hover {
 
 .center1 {
 	align-items: center;
-	align-content: center;
-	justify-content: center;
 }
 
 .fill-vertical {
@@ -146,8 +150,6 @@ button:hover {
 	z-index: 99999;
 	margin-top: 10vh;
 	margin-left: 2vh;
-	width: 20vh;
-	height: 30vh;
 	background-color: white;
 }
 
