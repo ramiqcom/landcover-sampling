@@ -3,23 +3,32 @@
 // Import packages
 import bq from './bq';
 
+/**
+ * Function to login
+ * @param {{ username: string, password: string }} body 
+ * @returns {Promise.<{ message: string, ok: boolean }>}
+ */
 export default async function main(body){
+	// Body
+	const { username, password } = body;
+
 	// Bigquery client
 	const bigquery = await bq();
 
 	// Login query
-	const login = `SELECT * FROM ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_LOGIN} WHERE username='${body.username}' AND password='${body.password}'`
+	const login = `SELECT * FROM ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_LOGIN} WHERE username='${username}' AND password='${password}'`
 
 	// Job
-	const [ job ]  = await bigquery.createQueryJob(login);
+	const [ rows ]  = await bigquery.query(login);
 
-	// Rows
-	const [ rows ] = await job.getQueryResults();
-
-	// Send conditional
-	if (rows.length) {
-		return { message: 'Login success', ok: true };
-	} else {
+	// Conditional if there is no account
+	if (!(rows.length)) {
 		return { message: "No account with that username and password", ok: false };
 	};
+
+	// Find table with the name
+	const [ samples ] = await bigquery.query(`SELECT * FROM ${process.env.DATASET_SAMPLE}.__TABLES__ WHERE table_id LIKE 'Samples_${username}_%'`);
+
+	// Return if success
+	return { message: 'Login success', ok: true, samples };
 }

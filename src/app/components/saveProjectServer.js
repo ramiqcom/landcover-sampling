@@ -1,11 +1,15 @@
 'use server';
 
 // Import packages
-import { BigQuery } from '@google-cloud/bigquery';
 import bq from './bq';
 import { setTimeout } from 'node:timers/promises';
+import checkStatus from './checkJob';
 
-// Main function
+/**
+ * Function to save project
+ * @param {{ projectId: number, projectName: string, region: string, year: number, username: string, featuresId: number, selectedFeature: number }} body 
+ * @returns {Promise.<{ message: string, ok: boolean, error: string | undefined}>}
+ */
 export default async function main(body){
 	// Bigquery client
 	const bigquery = await bq();
@@ -51,25 +55,8 @@ export default async function main(body){
 	// Status
 	try {
 		await setTimeout(1000);
-    return await checkStatus(bigquery, updateJob); 
+    return await checkStatus(bigquery, updateJob, { message: 'Project successfully saved', ok: true }); 
   } catch (error) {
     return { message: 'Project fail to save', error: error.message, ok: false }
   };
-}
-
-/**
- * Check status of query
- * @param {BigQuery} bigquery 
- * @param {BigQueryJob} job
- * @returns {Promise.<{ message: String, ok: Boolean }>}
- */
-async function checkStatus(bigquery, job){
-	const [ metadata ] = await bigquery.job(job.id).getMetadata();
-
-	if (metadata.status.state == 'DONE'){
-		return { message: 'Project successfully saved', ok: true };
-	} else {
-		await setTimeout(1000);
-		return await checkStatus(bigquery, job);
-	};
 }

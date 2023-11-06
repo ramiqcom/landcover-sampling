@@ -145,7 +145,7 @@ button:hover {
 }
 
 #layers {
-	padding: 3vh;
+	padding: 2vh;
 	position: fixed;
 	z-index: 99999;
 	margin-top: 10vh;

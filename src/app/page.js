@@ -11,10 +11,10 @@ export default function Home() {
   // States for show and hide layer in the map
   const [ imageCheckboxDisabled, setImageCheckboxDisabled ] = useState(true);
   const [ sampleCheckboxDisabled, setSampleCheckboxDisabled ] = useState(true);
-  const [ selectedSampleCheckboxDisabled, setSelectedSampleCheckboxDisabled ] = useState(true);
   const [ imageCheckbox, setImageCheckbox ] = useState(true);
   const [ sampleCheckbox, setSampleCheckbox ] = useState(true);
   const [ selectedSampleCheckbox, setSelectedSampleCheckbox ] = useState(true);
+  const [ labelledSampleCheckbox, setLabelledSampleCheckbox ] = useState(true);
 
   const states = {
     imageCheckbox, setImageCheckbox,
@@ -22,7 +22,7 @@ export default function Home() {
     selectedSampleCheckbox, setSelectedSampleCheckbox,
     imageCheckboxDisabled, setImageCheckboxDisabled,
     sampleCheckboxDisabled, setSampleCheckboxDisabled,
-    selectedSampleCheckboxDisabled, setSelectedSampleCheckboxDisabled
+    labelledSampleCheckbox, setLabelledSampleCheckbox
   };
 
   return (

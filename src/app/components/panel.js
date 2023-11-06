@@ -2,11 +2,12 @@
 import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import Login from './login';
-import { Map, Tile, Features, Point } from './map';
+import { Map, Tile, Features, Point, Labelled } from './map';
 import tile from './tileServer';
 import saveProject from './saveProjectServer';
 import sampleServer from './sampleServer';
 import lulc from './data.json' assert { type: 'json' };
+import loadSample from './loadSampleServer';
 
 // LULC parameter
 const lulcCode = Object.keys(lulc);
@@ -14,6 +15,10 @@ const lulcArray = Object.entries(lulc);
 const lulcLabel = lulcArray.map(array => array[1].label);
 const lulcPalette = lulcArray.map(array => array[1].palette);
 const lulcValue = lulcArray.map(array => array[1].value);
+const lulcValueLabel = [];
+for (let i = 0; i <= lulcArray.length; i++) {
+	lulcValueLabel[lulcValue[i]] = lulcLabel[i];
+}
 
 // Panel function as app handler
 export default function Panel(prop){
@@ -25,6 +30,7 @@ export default function Panel(prop){
 	const [ username, setUsername ] = useState(undefined);
 	const [ featuresId, setFeaturesId ] = useState(undefined);
 	const [ selectedFeature, setSelectedFeature ] = useState(undefined);
+	const [ sampleSet, setSampleSet ] = useState([]);
 
 	// List of state
 	const states = {
@@ -36,6 +42,7 @@ export default function Panel(prop){
 		username, setUsername,
 		featuresId, setFeaturesId,
 		selectedFeature, setSelectedFeature,
+		sampleSet, setSampleSet,
 		...prop
 	};
 
@@ -97,7 +104,7 @@ function Project(props){
 		} else {
 			setSaveProjectDisabled(true);
 		};
-	}, [project, projectName]);
+	}, [ project, projectName ]);
 
 	// Years selection
 	let years = [ 2012, 2017, 2022 ];
@@ -355,7 +362,7 @@ function Selection(props){
 				]);
 
 				// Load image to map
-				await loadImage(year, region, [red, green, blue], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
+				await loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
 
 				// Enable button again
 				toggleFeatures(false, [
@@ -373,15 +380,15 @@ function Sampling(props){
 	const { 
 		samplingDisplay,
 		year, region,
+		username,
 		setMessage, setMessageColor,
 		setRegionYearDisabled,
 		sampleGenerationDisabled, setSampleGenerationDisabled,
 		sampleSelectionDisabled, setSampleSelectionDisabled,
 		setSampleCheckboxDisabled,
-    setSelectedSampleCheckboxDisabled
+		sampleSet, setSampleSet
 	} = props;
 
-	const [ sampleSet, setSampleSet ] = useState([]);
 	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
 	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 	const [ sampleSize, setSampleSize ] = useState(10);
@@ -397,14 +404,49 @@ function Sampling(props){
 	const lcOptions = lulcLabel.map((label, i) => new Object({ label: label, value: lulcValue[i] }));
 	const [ lcSelect, setLcSelect ] = useState(undefined);
 
+	// Function to call samples
+	async function callSamples(sampleId, callback) {
+		const { features, ok, message } = await loadSample({ sampleId });
+		if (!ok) {
+			setMessage(message);
+			setMessageColor('red');
+		} else {
+			// Clear features samples
+			Features.clearLayers()
+
+			// Add the features layer to Features
+			Features.addData(features);
+
+			// Set main samples
+			setSampleFeatures(features);
+
+			// Samples list
+			const sampleList = features.features.map(feat => new Object({ value: feat.properties.num, label: feat.properties.num }));
+			setSampleList(sampleList);
+			setSelectedSample(sampleList[0]);
+
+			// Set max and min sample
+			const sampleIdSort = features.features.map(feat => feat.properties.num).sort((x, y) => x - y);
+			setMinSample(sampleIdSort[0]);
+			setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
+
+			// Change selected points
+			changePointSample(features, 0, setSelectedSampleFeatures);
+			
+			// Activate button
+			callback();
+		};
+	}
+
 	// Do something when selected sample set changed
 	useEffect(() => {
 		if (selectedSampleSet) {
-			setSampleId(selectedSampleSet.value);
 			setSampleName(selectedSampleSet.label);
+			setSampleId(selectedSampleSet.value);
 
 			if (selectedSampleSet.value) {
-				toggleFeatures(false, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
+				// Calling the samples
+				callSamples(selectedSampleSet.value, () => toggleFeatures(false, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]));
 			} else {
 				toggleFeatures(true, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
 			};
@@ -414,12 +456,31 @@ function Sampling(props){
 	// Do something and selected sample change
 	useEffect(() => {
 		if (selectedSample) {
-			toggleFeatures(false, [ setSampleSelectionDisabled, setSelectedSampleCheckboxDisabled ]);
-			changePointSample(sampleFeatures, selectedSample.value, setSelectedSampleFeatures);
+			// Turn on the button
+			toggleFeatures(false, [ setSampleSelectionDisabled ]);
+
+			// Change the selected sample
+			const selected = changePointSample(sampleFeatures, selectedSample.value, setSelectedSampleFeatures);
+
+			// Set the land cover choice
+			if (selected.properties.validation){
+				setLcSelect({ value: selected.properties.validation, label: lulcValueLabel[selected.properties.validation] })
+			} else {
+				setLcSelect(null);
+			};
+			
 		} else {
-			toggleFeatures(true, [ setSampleSelectionDisabled, setSelectedSampleCheckboxDisabled ]);
-		}
+			toggleFeatures(true, [ setSampleSelectionDisabled ]);
+		};
 	}, [ selectedSample ]);
+
+	// Change the Features if it changed
+	useEffect(() => {
+		if (Features) {
+			Features.clearLayers();
+			Features.addData(sampleFeatures);
+		}
+	}, [ sampleFeatures ]);
 
 	return (
 		<div id='sampling' className='flexible vertical space' style={{ display: samplingDisplay }}>
@@ -432,7 +493,7 @@ function Sampling(props){
 
 				<input style={{ flex: 1 }} disabled={sampleGenerationDisabled} type='number' value={sampleSize} onChange={e => setSampleSize(e.target.value) }/>
 
-				<button className='button-parameter' style={{ flex: 1 }}  onClick={async () => {
+				<button className='button-parameter' disabled={sampleGenerationDisabled} style={{ flex: 1 }}  onClick={async () => {
 					// Disable button
 					toggleFeatures(true, [
 						setSampleGenerationDisabled,
@@ -443,17 +504,23 @@ function Sampling(props){
 					// Set message
 					setMessage('Generating sample');
 					setMessageColor('blue');
-
-					// Generate sample
-					await generateSample(year.value, region.value, { 
-						sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample 
-					});
-
+					
 					// Generate sample set id
 					const id = new Date().getTime();
 
+					// Generate sample
+					const result = await generateSample(year.value, region.value, id, username, { 
+						sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample 
+					});
+
+					// Check if the process is success
+					if (result) {
+						setMessage(result);
+						setMessageColor('red');
+					}
+
 					// New sample option
-					const option = { value: id, label: `Sample_${id}` };
+					const option = { value: `Samples_${username}_${id}`, label: `Samples_${username}_${id}` };
 
 					// Add the option to sample set selection
 					pushOption(sampleSet, setSampleSet, option, 'add');
@@ -542,7 +609,36 @@ function Sampling(props){
 				placeholder={'Select landcover type'}
 				options={lcOptions}
 				value={lcSelect}
-				onChange={value => setLcSelect(value)}
+				onChange={value => {
+					setLcSelect(value);
+					
+					// Current all features
+					const currentFeatures = sampleFeatures.features.map(feat => {
+						if (feat.properties.num === selectedSample.value) {
+							feat.properties.validation = value.value;
+							setSelectedSampleFeatures(feat);
+						};
+						return feat;
+					});
+		
+					// Feature collection assign
+					const features = {
+						type: 'FeatureCollection',
+						features: currentFeatures
+					};
+		
+					// Set the current sample features
+					setSampleFeatures(features);
+
+					// Add labelled sample
+					Labelled.clearLayers();
+					let labelledFeatures = features.features.filter(feat => feat.properties.validation);
+					labelledFeatures = {
+						type: 'FeatureCollection',
+						features: labelledFeatures
+					};
+					Labelled.addData(labelledFeatures);
+				}}
 				className='select-menu'
 				isDisabled={sampleSelectionDisabled}
 			/>
@@ -632,14 +728,18 @@ function pushOption(current, setter, selected, status){
  * @param {String} region 
  * @param {Number} sampleSize
  */
-async function generateSample(year, region, prop){
+async function generateSample(year, region, id, username, prop){
 	const { sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample } = prop;
 
-	const body = { year, region, sampleSize };
+	const body = { year, region, sampleSize, sampleId: id, username };
 
 	// Generate sampel from earth engine
-	const features = await sampleServer(body);
-	setSampleFeatures(features);
+	const { features, ok, message } = await sampleServer(body);
+	if (ok) {
+		setSampleFeatures(features);
+	} else {
+		return message;
+	};
 	
 	// Remove all features
 	Features.clearLayers();
@@ -648,12 +748,12 @@ async function generateSample(year, region, prop){
 	Features.addData(features);
 
 	// Samples list
-	const sampleList = features.features.map(feat => new Object({ value: feat.properties.id, label: feat.properties.id }));
+	const sampleList = features.features.map(feat => new Object({ value: feat.properties.num, label: feat.properties.num }));
 	setSampleList(sampleList);
 	setSelectedSample(sampleList[0]);
 
 	// Set max and min sample
-	const sampleIdSort = features.features.map(feat => feat.properties.id).sort((x, y) => x - y);
+	const sampleIdSort = features.features.map(feat => feat.properties.num).sort((x, y) => x - y);
 	setMinSample(sampleIdSort[0]);
 	setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
 
@@ -669,11 +769,13 @@ async function generateSample(year, region, prop){
  */
 function changePointSample(features, value, setSelectedSampleFeatures){
 	// Selected
-	const selected = features.features.filter(feat => feat.properties.id === value)[0];
+	const selected = features.features.filter(feat => feat.properties.num === value)[0];
 	setSelectedSampleFeatures(selected);
 	Point.clearLayers() // Clear all layers inside the selected one
 	Point.addData(selected);
 
 	// Zoom to the selected sample
 	Map.fitBounds(Point.getBounds());
+
+	return selected;
 }
