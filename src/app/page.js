@@ -5,6 +5,8 @@ import initMap from './components/map';
 import Panel from './components/panel';
 import Layers from './components/layer';
 import { useState } from 'react';
+import { Grid } from 'gridjs-react';
+import { lulcValueString } from './components/lulc';
 
 // Main react function
 export default function Home() {
@@ -15,6 +17,8 @@ export default function Home() {
   const [ sampleCheckbox, setSampleCheckbox ] = useState(true);
   const [ selectedSampleCheckbox, setSelectedSampleCheckbox ] = useState(true);
   const [ labelledSampleCheckbox, setLabelledSampleCheckbox ] = useState(true);
+  const [ cfDisplay, setCfDisplay ] = useState('none');
+  const [ cfData, setCfData ] = useState(() => []);
 
   const states = {
     imageCheckbox, setImageCheckbox,
@@ -22,11 +26,14 @@ export default function Home() {
     selectedSampleCheckbox, setSelectedSampleCheckbox,
     imageCheckboxDisabled, setImageCheckboxDisabled,
     sampleCheckboxDisabled, setSampleCheckboxDisabled,
-    labelledSampleCheckbox, setLabelledSampleCheckbox
+    labelledSampleCheckbox, setLabelledSampleCheckbox,
+    cfDisplay, setCfDisplay,
+    cfData, setCfData 
   };
 
   return (
     <>
+      <ConfusionMatrix {...states} />
       <Layers {...states} />
       <Canvas />
       <Panel {...states} />
@@ -40,6 +47,27 @@ export default function Home() {
 				}}
       />
     </>
+  )
+}
+
+// Confusion matrix
+function ConfusionMatrix(prop) {
+  const { cfDisplay, cfData } = prop;
+  const columns = Array.from(lulcValueString);
+  columns.unshift('');
+  columns.push('%')
+  return (
+    <div style={{ display: cfDisplay }} id='cf-div'>
+      <Grid
+        columns={columns}
+        data={cfData}
+        style={{
+          container: { fontSize: 'small' },
+          td: { padding: 2, textAlign: 'center' },
+          th: { padding: 2, textAlign: 'center' }
+        }}
+      />  
+    </div>
   )
 }
 

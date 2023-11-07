@@ -27,10 +27,7 @@ export default function Login(props){
 			</div>
 
 			<div id='login-button'>
-				<button onClick={async (e) => {
-					// Disabled button for a while
-					e.target.disabled = true;
-
+				<button disabled={disabled} onClick={async (e) => {
 					// Disabled input for a while
 					setDisabled(true);
 
@@ -41,7 +38,8 @@ export default function Login(props){
 					// Check username and password
 					if (!(username && password)) {
 						// Set message to account not found
-						setMessage('Username or password is empty')
+						setMessage('Username or password is empty');
+						setMessageColor('red');
 					} else {
 						// Body
 						const body = { username, password };
@@ -70,9 +68,6 @@ export default function Login(props){
 
 							};
 						};
-
-					// Set login button to enable again
-					e.target.disabled = false;
 
 					// Set input to enable again
 					setDisabled(false);

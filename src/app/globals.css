@@ -1,11 +1,15 @@
 @import url('../../node_modules/leaflet/dist/leaflet.css');
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&display=swap');
+@import url('../../node_modules/gridjs/dist//theme/mermaid.css');
 
 body {
 	margin: 0;
 	height: 100vh;
 	width: 100%;
 	display: flex;
+	font-family: 'Open Sans', sans-serif;
+	font-size: small;
 }
 
 input {
@@ -25,7 +29,6 @@ button {
 	border-radius: 100vh;
 	background-color: #1C2D24;
   color: white;
-  font-size: medium;
   border: 0;
 }
 
@@ -35,7 +38,7 @@ button:disabled {
   border: 1px solid #141F19;
 }
 
-button:hover {
+button:enabled:hover {
   background-color: #384E40;
 }
 
@@ -132,6 +135,7 @@ button:hover {
 	flex: 1;
 	padding: 3vh;
 	background-color: #F9F5F0;
+	overflow: auto;
 }
 
 #bands {
@@ -139,7 +143,7 @@ button:hover {
 }
 
 #title-panel {
-	font-size: 3vh;
+	font-size: x-large;
 	font-weight: bold;
 	margin-bottom: 3%;
 }
@@ -155,4 +159,14 @@ button:hover {
 
 #basemap {
 	gap: 0;
+}
+
+#cf-div {
+	padding: 2vh;
+	position: fixed;
+	z-index: 9999999;
+	max-width: 75vh;
+	margin-left: 30%;
+	background-color: white;
+	align-self: center;
 }

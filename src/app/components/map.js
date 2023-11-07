@@ -5,7 +5,8 @@ export let Basemap;
 export let Tile;
 export let Point;
 
-export default function initMap(map) {
+export default async function initMap(map) {
+
 	// Assign map
 	Map = L.map(map, 
 		{ 

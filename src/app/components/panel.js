@@ -6,20 +6,10 @@ import { Map, Tile, Features, Point } from './map';
 import tile from './tileServer';
 import saveProject from './saveProjectServer';
 import sampleServer from './sampleServer';
-import lulc from './data.json' assert { type: 'json' };
 import loadSample from './loadSampleServer';
 import updateSample from './updateSampleServer';
-
-// LULC parameter
-const lulcCode = Object.keys(lulc);
-const lulcArray = Object.entries(lulc);
-const lulcLabel = lulcArray.map(array => array[1].label);
-const lulcPalette = lulcArray.map(array => array[1].palette);
-const lulcValue = lulcArray.map(array => array[1].value);
-const lulcValueLabel = [];
-for (let i = 0; i <= lulcArray.length; i++) {
-	lulcValueLabel[lulcValue[i]] = lulcLabel[i];
-}
+import Assessment from './assessment';
+import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 
 // Panel function as app handler
 export default function Panel(prop){
@@ -138,13 +128,20 @@ function Project(props){
 	// Sampling display
 	const [ samplingDisplay, setSamplingDisplay ] = useState('none');
 
+	// Assessment display
+	const [ assessmentDisplay, setAssessmentDisplay ] = useState('none')
+
 	// Image and sampling button
 	const [ imageButtonDisabled, setImageButtonDisabled ] = useState(true);
 	const [ samplingButtonDisabled, setSamplingButtonDisabled ] = useState(false);
+	const [ assessmentButtonDisabled, setAssessmentButtonDisabled ] = useState(false);
 
 	// Sample parameter disabled button
 	const [ sampleGenerationDisabled, setSampleGenerationDisabled ] = useState(false);
 	const [ sampleSelectionDisabled, setSampleSelectionDisabled ] = useState(true);
+
+	// Sample features
+	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 
 	// State list
 	const states = {
@@ -164,6 +161,9 @@ function Project(props){
 		regionYearDisabled, setRegionYearDisabled,
 		sampleGenerationDisabled, setSampleGenerationDisabled,
 		sampleSelectionDisabled, setSampleSelectionDisabled,
+		assessmentDisplay, setAssessmentDisplay,
+		assessmentButtonDisabled, setAssessmentButtonDisabled,
+		sampleFeatures, setSampleFeatures,
 		...props
 	};
 
@@ -259,27 +259,43 @@ function Project(props){
 				<div id='parameter-panel' className='flexible vertical'>
 					<div id='button-menu' className='flexible'>
 						<button className='select-button' disabled={imageButtonDisabled} onClick={() => {
-							setImageButtonDisabled(!imageButtonDisabled);
-							setSamplingButtonDisabled(!samplingButtonDisabled);
+							setImageButtonDisabled(true);
+							setSamplingButtonDisabled(false);
+							setAssessmentButtonDisabled(false);
 							setSamplingDisplay('none');
 							setSelectionDisplay('flex');
+							setAssessmentDisplay('none');
 						}}>
 							Image
 						</button>
 
 						<button className='select-button' disabled={samplingButtonDisabled} onClick={() => {
-							setImageButtonDisabled(!imageButtonDisabled);
-							setSamplingButtonDisabled(!samplingButtonDisabled);
+							setImageButtonDisabled(false);
+							setSamplingButtonDisabled(true);
+							setAssessmentButtonDisabled(false);
 							setSamplingDisplay('flex');
 							setSelectionDisplay('none');
+							setAssessmentDisplay('none');
 						}}>
 							Sampling
+						</button>
+
+						<button className='select-button' disabled={assessmentButtonDisabled} onClick={() => {
+							setImageButtonDisabled(false);
+							setSamplingButtonDisabled(false);
+							setAssessmentButtonDisabled(true);
+							setSamplingDisplay('none');
+							setSelectionDisplay('none');
+							setAssessmentDisplay('flex');
+						}}>
+							Assessment
 						</button>
 					</div>
 					
 					<div id='menu' className='flexible-space'>
 						<Selection {...states} />
 						<Sampling {...states} />
+						<Assessment {...states} />
 					</div>
 				</div>
 
@@ -387,15 +403,11 @@ function Sampling(props){
 		sampleGenerationDisabled, setSampleGenerationDisabled,
 		sampleSelectionDisabled, setSampleSelectionDisabled,
 		setSampleCheckboxDisabled,
-		sampleSet, setSampleSet
+		sampleSet, setSampleSet,
+		sampleFeatures, setSampleFeatures
 	} = props;
 
-	useEffect(() => {
-		console.log(sampleSet);
-	}, [sampleSet])
-
 	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
-	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 	const [ sampleSize, setSampleSize ] = useState(10);
 	const [ sampleList, setSampleList ] = useState([]);
 	const [ selectedSampleFeatures, setSelectedSampleFeatures ] = useState(undefined);
@@ -496,7 +508,7 @@ function Sampling(props){
 					Sample per class
 				</div>
 
-				<input style={{ flex: 1 }} disabled={sampleGenerationDisabled} type='number' value={sampleSize} onChange={e => setSampleSize(e.target.value) }/>
+				<input style={{ flex: 1 }} min={1} max={100} disabled={sampleGenerationDisabled} type='number' value={sampleSize} onChange={e => setSampleSize(e.target.value) }/>
 
 				<button className='button-parameter' disabled={sampleGenerationDisabled} style={{ flex: 1 }}  onClick={async () => {
 					// Disable button

@@ -28,7 +28,7 @@ export default async function main(body){
 
 	// Sample generation
 	const sample = image.stratifiedSample({
-		numPoints: sampleSize,
+		numPoints: Number(sampleSize),
 		scale: 30,
 		region: image.geometry(),
 		geometries: true
