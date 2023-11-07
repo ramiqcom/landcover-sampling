@@ -1,7 +1,8 @@
 'use server';
 
 // Import packages
-import bq from './bq';
+import storage from "./storage";
+import bq from "./bq";
 
 /**
  * Function to login
@@ -26,8 +27,19 @@ export default async function main(body){
 		return { message: "No account with that username and password", ok: false };
 	};
 
-	// Find table with the name
-	const [ samples ] = await bigquery.query(`SELECT * FROM ${process.env.DATASET_SAMPLE}.__TABLES__ WHERE table_id LIKE 'Samples_${username}_%'`);
+	// Find file with that name
+	const gcs = await storage();
+
+	// Check file list
+	const [ result, error ] = await gcs.bucket(process.env.BUCKET).getFiles({ prefix: `sample/${username}_` });
+	
+	// Sample list
+	let samples;
+	if (!(result.length)) {
+		samples = []
+	} else {
+		samples = result.map(feat => feat.name.split(/[\/.]/)[1]);
+	}
 
 	// Return if success
 	return { message: 'Login success', ok: true, samples };

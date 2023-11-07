@@ -8,6 +8,7 @@ import saveProject from './saveProjectServer';
 import sampleServer from './sampleServer';
 import lulc from './data.json' assert { type: 'json' };
 import loadSample from './loadSampleServer';
+import updateSample from './updateSampleServer';
 
 // LULC parameter
 const lulcCode = Object.keys(lulc);
@@ -389,6 +390,10 @@ function Sampling(props){
 		sampleSet, setSampleSet
 	} = props;
 
+	useEffect(() => {
+		console.log(sampleSet);
+	}, [sampleSet])
+
 	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
 	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 	const [ sampleSize, setSampleSize ] = useState(10);
@@ -506,10 +511,10 @@ function Sampling(props){
 					setMessageColor('blue');
 					
 					// Generate sample set id
-					const id = new Date().getTime();
+					const id = `${username}_${region.value}_${year.value}_${new Date().getTime()}`;
 
 					// Generate sample
-					const result = await generateSample(year.value, region.value, id, username, { 
+					const result = await generateSample(year.value, region.value, id, { 
 						sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample 
 					});
 
@@ -520,7 +525,7 @@ function Sampling(props){
 					}
 
 					// New sample option
-					const option = { value: `Samples_${username}_${id}`, label: `Samples_${username}_${id}` };
+					const option = { value: id, label: id };
 
 					// Add the option to sample set selection
 					pushOption(sampleSet, setSampleSet, option, 'add');
@@ -609,7 +614,8 @@ function Sampling(props){
 				placeholder={'Select landcover type'}
 				options={lcOptions}
 				value={lcSelect}
-				onChange={value => {
+				onChange={async value => {
+					/// Change the lc value
 					setLcSelect(value);
 					
 					// Current all features
@@ -624,8 +630,17 @@ function Sampling(props){
 					// Feature collection assign
 					const features = {
 						type: 'FeatureCollection',
-						features: currentFeatures
+						features: currentFeatures,
+						properties: {
+							region,
+							year,
+							sampleId,
+							sampleName: sampleName || sampleId
+						}
 					};
+
+					// Update the sample in the server
+					await updateSample({ sampleId, features });
 		
 					// Set the current sample features
 					setSampleFeatures(features);
@@ -723,10 +738,10 @@ function pushOption(current, setter, selected, status){
  * @param {String} region 
  * @param {Number} sampleSize
  */
-async function generateSample(year, region, id, username, prop){
+async function generateSample(year, region, id, prop){
 	const { sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample } = prop;
 
-	const body = { year, region, sampleSize, sampleId: id, username };
+	const body = { year, region, sampleSize, sampleId: id };
 
 	// Generate sampel from earth engine
 	const { features, ok, message } = await sampleServer(body);

@@ -6,10 +6,6 @@ import ee from '@google/earthengine';
 import { auth, init } from './eePromise';
 import pify from 'pify';
 import storage from './storage';
-import bq from './bq';
-import { NdJson } from 'json-nd';
-import checkStatus from './checkJob';
-import { setTimeout } from 'node:timers/promises';
 
 /**
  * Function to generate sample
@@ -17,7 +13,7 @@ import { setTimeout } from 'node:timers/promises';
  * @returns { Promise.<{ features: GeoJSON, ok: boolean, message: string | undefined }> }
  */
 export default async function main(body){
-	const { region, year, sampleSize, sampleId, username } = body;
+	const { region, year, sampleSize, sampleId } = body;
 	const id = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.LULC_COLLECTION}/LULC_${region}_${year}_v1`;
 	
 	// Key
@@ -48,9 +44,15 @@ export default async function main(body){
 	};
 
 	// Save the file to cloud storage
-	const fileName = `sample/Samples_${sampleId}.geojson`;
+	const fileName = `sample/${sampleId}.geojson`;
 	const gcs = await storage();
-	await gcs.bucket(process.env.BUCKET).file(fileName).save(NdJson.stringify(features.features));
+	features.properties = {
+		region,
+		year,
+		sampleId,
+		sampleName: sampleId
+	};
+	await gcs.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
 
 	// Check if file is uploaded
 	const [ result, error ] = await gcs.bucket(process.env.BUCKET).getFiles({ prefix: fileName });
@@ -58,29 +60,9 @@ export default async function main(body){
 	const readyFileName = fileMetadata[0].name;
 
 	// If error on saving
-	if (error) {
-		return { message: 'The fetures cannot be uploaded', ok: false }
-	};
-
-	// Load the geojson to bigquery
-	const sampleTable = `${process.env.DATASET_SAMPLE}.Samples_${username}_${sampleId}`;
-	const fileAddress = `gs://${process.env.BUCKET}/${readyFileName}`;
-	const geojsonQuery = `CREATE EXTERNAL TABLE ${sampleTable} OPTIONS (
-		format = 'NEWLINE_DELIMITED_JSON', 
-		json_extension = 'GEOJSON', 
-		uris = ['${fileAddress}']
-	)`;
-
-	// Load the geojson query
-	const bigquery = await bq();
-	const [ geojsonJob ] = await bigquery.createQueryJob(geojsonQuery);
-	
-	// Check if it is error
-	try {
-		await setTimeout(1000);
-		await checkStatus(bigquery, geojsonJob, null);
+	if (readyFileName) {
 		return { features, ok: true };
-	} catch (err) {
-		return { message: err.message, ok: false };
-	}
+	} else {
+		return { message: 'The fetures cannot be uploaded', ok: false };
+	};
 }

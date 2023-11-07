@@ -62,19 +62,8 @@ export default function Login(props){
 								setAppState('flex');
 
 								// Check the sample list
-								if (samples.length) {
-									const sampleSets = samples.map(sample => {
-										const obj = {};
-										if (sample.table_name) {
-											obj.label = sample.table_name;
-										} else {
-											obj.label = sample.table_id;
-										};
-										obj.value = sample.table_id;
-										return obj;
-									});
-									
-									setSampleSet(sampleSets);
+								if (samples.length) {			
+									setSampleSet(samples.map(sampleId => new Object({ value: sampleId, label: sampleId })));
 								} else {
 									setSampleSet([]);
 								};
