@@ -19,9 +19,9 @@ export default function Panel(prop){
 	const [ project, setProject ] = useState(undefined);
 	const [ projectId, setProjectId ] = useState(undefined);
 	const [ username, setUsername ] = useState(undefined);
-	const [ featuresId, setFeaturesId ] = useState(undefined);
-	const [ selectedFeature, setSelectedFeature ] = useState(undefined);
 	const [ sampleSet, setSampleSet ] = useState([]);
+	const [ selectedSample, setSelectedSample ] = useState(undefined);
+	const [ sampleId, setSampleId ] = useState(undefined);
 
 	// List of state
 	const states = {
@@ -31,9 +31,9 @@ export default function Panel(prop){
 		project, setProject,
 		projectId, setProjectId,
 		username, setUsername,
-		featuresId, setFeaturesId,
-		selectedFeature, setSelectedFeature,
 		sampleSet, setSampleSet,
+		selectedSample, setSelectedSample,
+		sampleId, setSampleId,
 		...prop
 	};
 
@@ -69,8 +69,8 @@ function Project(props){
 		setProjectId,
 		projectId,
 		username,
-		featuresId,
-		selectedFeature,
+		selectedSample,
+		sampleId,
 	} = props;
 
 	// Save project
@@ -199,7 +199,7 @@ function Project(props){
 						
 						// Create new project id if the inst already
 						if (!(project)) {
-							setProjectId(new Date().getTime());
+							setProjectId(`${username}_${new Date().getTime()}`);
 						};
 
 						// Information needed to save project
@@ -209,12 +209,13 @@ function Project(props){
 							region: region.value,
 							year: year.value,
 							username,
-							featuresId,
-							selectedFeature
+							sampleId: sampleId ? sampleId : null,
+							selectedSample: selectedSample ? selectedSample.value : null
 						};
 
 						// Save project
 						const response = await saveProject(body);
+						console.log(response);
 
 						// Condiitional if data is saved
 						if (response.ok){
@@ -404,16 +405,16 @@ function Sampling(props){
 		sampleSelectionDisabled, setSampleSelectionDisabled,
 		setSampleCheckboxDisabled,
 		sampleSet, setSampleSet,
-		sampleFeatures, setSampleFeatures
+		sampleFeatures, setSampleFeatures,
+		sampleId, setSampleId,
+		selectedSample, setSelectedSample
 	} = props;
 
 	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
 	const [ sampleSize, setSampleSize ] = useState(10);
 	const [ sampleList, setSampleList ] = useState([]);
 	const [ selectedSampleFeatures, setSelectedSampleFeatures ] = useState(undefined);
-	const [ selectedSample, setSelectedSample ] = useState(undefined);
 	const [ sampleName, setSampleName ] = useState(undefined);
-	const [ sampleId, setSampleId ] = useState(undefined);
 	const [ minSample, setMinSample ] = useState(undefined);
 	const [ maxSample, setMaxSample ] = useState(undefined);
 

@@ -18,7 +18,7 @@ export default function Home() {
   const [ selectedSampleCheckbox, setSelectedSampleCheckbox ] = useState(true);
   const [ labelledSampleCheckbox, setLabelledSampleCheckbox ] = useState(true);
   const [ cfDisplay, setCfDisplay ] = useState('none');
-  const [ cfData, setCfData ] = useState(() => []);
+  const [ cfData, setCfData ] = useState([]);
 
   const states = {
     imageCheckbox, setImageCheckbox,

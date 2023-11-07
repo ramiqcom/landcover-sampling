@@ -34,13 +34,19 @@ export default async function main(body){
 	const [ result, error ] = await gcs.bucket(process.env.BUCKET).getFiles({ prefix: `sample/${username}_` });
 	
 	// Sample list
-	let samples;
-	if (!(result.length)) {
-		samples = []
-	} else {
-		samples = result.map(feat => feat.name.split(/[\/.]/)[1]);
+	const samples = [];
+	if (result.length) {
+		result.map(feat => samples.push(feat.name.split(/[\/.]/)[1]));
+	}
+
+	// Check if there is any project locked to the account
+	const projectTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
+	const [ projectQuery ] = await bigquery.query(`SELECT * FROM ${projectTable} WHERE username='${username}'`);
+	const projects = [];
+	if (projectQuery.length) {
+		projectQuery.map(feat => projects.push({ value: feat.project_id, label: feat.project_name }));
 	}
 
 	// Return if success
-	return { message: 'Login success', ok: true, samples };
+	return { message: 'Login success', ok: true, samples, projects };
 }

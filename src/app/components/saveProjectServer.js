@@ -2,8 +2,6 @@
 
 // Import packages
 import bq from './bq';
-import { setTimeout } from 'node:timers/promises';
-import checkStatus from './checkJob';
 
 /**
  * Function to save project
@@ -24,38 +22,36 @@ export default async function main(body){
 		region,
 		year,
 		username,
-		featuresId,
-		selectedFeature
+		sampleId,
+		selectedSample
 	} = body;
 
 	// Check query to insert or update
-	const [ queryJob ] = await bigquery.createQueryJob(`SELECT * FROM ${table} WHERE project_id = ${projectId}`);
-	const [ queryRows ] = await queryJob.getQueryResults();
+	const [ queryRows ] = await bigquery.query(`SELECT * FROM ${table} WHERE project_id='${projectId}'`);
 
 	// Query save
 	let querySave;
+
+	console.log(`VALUES('${projectId}', '${projectName}', '${region}', ${year}, null, null, '${username}')`);
 
 	// Check length
 	if (queryRows.length) {
 		// Query for update
 		querySave = `UPDATE ${table} 
-			SET project_name='${projectName}', region='${region}', year=${year}, features_id=${featuresId}, selected_id=${selectedFeature}
-			WHERE project_id=${projectId}`;		
+			SET project_name='${projectName}', region='${region}', year=${year}, sample_id='${featuresId}', selected_sample=${selectedFeature}
+			WHERE project_id='${projectId}'`;		
 	} else {
-		// Query value for insert
-		const values = `VALUES('${projectName}', ${year}, '${region}', ${projectId}, '${username}', ${featuresId}, ${selectedFeature})`;
-
+		const values = `VALUES('${projectId}', '${projectName}', ${year}, '${region}', '${sampleId}', ${selectedSample}, '${username}')`;
+		console.log(values);
+		
 		// Query for insert data
 		querySave = `INSERT INTO ${table} ${values}`;
 	};
 
-	// Run job
-	const [ updateJob ] = await bigquery.createQueryJob(querySave);
-
 	// Status
 	try {
-		await setTimeout(1000);
-    return await checkStatus(bigquery, updateJob, { message: 'Project successfully saved', ok: true }); 
+		await bigquery.query(querySave);
+    return { message: 'Project successfully saved', ok: true }; 
   } catch (error) {
     return { message: 'Project fail to save', error: error.message, ok: false }
   };
