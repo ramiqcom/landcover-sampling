@@ -10,6 +10,7 @@ import loadSample from './loadSampleServer';
 import updateSample from './updateSampleServer';
 import updateSampleName from './updateSampleNameServer';
 import Assessment from './assessment';
+import loadProject from './loadProjectServer';
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 
 // Panel function as app handler
@@ -107,7 +108,7 @@ function Project(props){
 	regions = regions.map(region => new Object({ label: region, value: region }));
 
 	// Year state
-	const [year, setYear] = useState(years[2]);
+	const [ year, setYear ] = useState(years[2]);
 
 	// Region state
 	const [ region, setRegion ] = useState(regions[0]);
@@ -144,6 +145,36 @@ function Project(props){
 	// Sample features
 	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 
+	// Image url
+	const [ imageUrl, setImageUrl ] = useState(undefined);
+	const [ imageGeoJson, setImageGeoJson ] = useState(undefined);
+
+	// Load project function
+	async function loadProjectData(){
+		const { region, year, sample_id, selected_sample, visual } = await loadProject({ projectId });
+		
+		// Set region and year
+		setRegion({ value: region, label: region });
+		setYear({ value: year, label: year });
+
+		// Set visualization
+		const [ red, green, blue ] = JSON.parse(visual);
+		console.log(visual);
+		setRed({ value: red, label: red });
+		setGreen({ value: green, label: green });
+		setBlue({ value: blue, label: blue });
+
+		// Load image
+		await loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
+	}
+
+	// Change the image sample etc if the project change
+	useEffect(() => {
+		if (project) {
+			loadProjectData();
+		}
+	}, [ project ]);
+
 	// State list
 	const states = {
 		projectName, setProjectName,
@@ -165,6 +196,8 @@ function Project(props){
 		assessmentDisplay, setAssessmentDisplay,
 		assessmentButtonDisabled, setAssessmentButtonDisabled,
 		sampleFeatures, setSampleFeatures,
+		imageUrl, setImageUrl,
+		imageGeoJson, setImageGeoJson,
 		...props
 	};
 
@@ -174,9 +207,10 @@ function Project(props){
 				<Select 
 					options={projectList}
 					value={project}
-					placeholder={'Create a new project first!'}
 					onChange={value => {
 						setProject(value);
+						setProjectId(value.value);
+						setProjectName(value.label);
 					}}
 					className='select-menu'
 					style={{ flex: 4 }}
@@ -209,6 +243,7 @@ function Project(props){
 							projectName,
 							region: region.value,
 							year: year.value,
+							visual: JSON.stringify([ red.value, green.value, blue.value ]),
 							username,
 							sampleId: sampleId ? sampleId : null,
 							selectedSample: selectedSample ? selectedSample.value : null
@@ -324,12 +359,10 @@ function Selection(props){
 		setMessageColor,
 		selectionDisplay,
 		setRegionYearDisabled,
-		setImageCheckboxDisabled
+		setImageCheckboxDisabled,
+		imageUrl, setImageUrl,
+		imageGeoJson, setImageGeoJson 
 	} = props;
-
-	// Image url
-	const [ imageUrl, setImageUrl ] = useState(undefined);
-	const [ imageGeoJson, setImageGeoJson ] = useState(undefined);
 
 	// Useeffect if the image url changed
 	useEffect(() => {
@@ -381,7 +414,7 @@ function Selection(props){
 				]);
 
 				// Load image to map
-				await loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
+				await loadImage(year.value, region.value, [ red.value, green.value, blue.value ], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
 
 				// Enable button again
 				toggleFeatures(false, [
@@ -425,7 +458,12 @@ function Sampling(props){
 
 	// Function to call samples
 	async function callSamples(sampleId, callback) {
+		// Set loading to load sample
+		setMessage('Loading sample...');
+		setMessageColor('blue');
+
 		const { features, ok, message } = await loadSample({ sampleId });
+
 		if (!ok) {
 			setMessage(message);
 			setMessageColor('red');
@@ -454,6 +492,9 @@ function Sampling(props){
 			
 			// Activate button
 			callback();
+
+			// Set loading to null again
+			setMessage(undefined);
 		};
 	}
 
@@ -569,7 +610,6 @@ function Sampling(props){
 				<Select 
 					options={sampleSet}
 					value={selectedSampleSet}
-					placeholder={'Generate sample first!'}
 					onChange={value => {
 						setSelectedSampleSet(value);
 					}}
@@ -699,16 +739,16 @@ function Sampling(props){
  * @param {{ value: String, label: String }} green 
  * @param {{ value: String, label: String }} blue 
  */
-async function loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor){
+async function loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor) {
 	// Image load message
 	setMessage('Preparing image...');
 	setMessageColor('blue');
 
 	// Parameter to fetch image
 	const body = {
-		year: year.value,
-		region: region.value,
-		bands: [ red.value, green.value, blue.value ]
+		year: year,
+		region: region,
+		bands: [ red, green, blue ]
 	};
 
 	// Load tile and geojson with server action

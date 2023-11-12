@@ -21,6 +21,7 @@ export default async function main(body){
 		projectName,
 		region,
 		year,
+		visual,
 		username,
 		sampleId,
 		selectedSample
@@ -32,8 +33,6 @@ export default async function main(body){
 	// Query save
 	let querySave;
 
-	console.log(`VALUES('${projectId}', '${projectName}', '${region}', ${year}, null, null, '${username}')`);
-
 	// Check length
 	if (queryRows.length) {
 		// Query for update
@@ -41,8 +40,8 @@ export default async function main(body){
 			SET project_name='${projectName}', region='${region}', year=${year}, sample_id='${featuresId}', selected_sample=${selectedFeature}
 			WHERE project_id='${projectId}'`;		
 	} else {
-		const values = `VALUES('${projectId}', '${projectName}', ${year}, '${region}', '${sampleId}', ${selectedSample}, '${username}')`;
-				
+		const values = `VALUES('${projectId}', '${projectName}', ${year}, '${region}', '${sampleId}', ${selectedSample}, '${username}', '${visual}')`;
+
 		// Query for insert data
 		querySave = `INSERT INTO ${table} ${values}`;
 	};
