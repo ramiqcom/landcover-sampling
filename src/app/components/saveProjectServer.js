@@ -42,8 +42,7 @@ export default async function main(body){
 			WHERE project_id='${projectId}'`;		
 	} else {
 		const values = `VALUES('${projectId}', '${projectName}', ${year}, '${region}', '${sampleId}', ${selectedSample}, '${username}')`;
-		console.log(values);
-		
+				
 		// Query for insert data
 		querySave = `INSERT INTO ${table} ${values}`;
 	};

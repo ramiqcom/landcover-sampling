@@ -6,14 +6,15 @@ import ee from '@google/earthengine';
 import { auth, init } from './eePromise';
 import pify from 'pify';
 import storage from './storage';
+import bq from './bq';
 
 /**
  * Function to generate sample
- * @param {{ region: string, year: number, sample: number }} body 
+ * @param {{ region: string, year: number, sampleSize: number, sampleId: string, username: string, time: number }} body 
  * @returns { Promise.<{ features: GeoJSON, ok: boolean, message: string | undefined }> }
  */
 export default async function main(body){
-	const { region, year, sampleSize, sampleId } = body;
+	const { region, year, sampleSize, sampleId, username, time } = body;
 	const id = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.LULC_COLLECTION}/LULC_${region}_${year}_v1`;
 	
 	// Key
@@ -53,16 +54,11 @@ export default async function main(body){
 		sampleName: sampleId
 	};
 	await gcs.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
+	
+	// Add log to database
+	const bigquery = await bq();
+	const valuesTable = `VALUES ('${sampleId}', '${sampleId}', '${username}', ${time}, ${time})`;
+	await bigquery.query(`INSERT INTO ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE} ${valuesTable}`);
 
-	// Check if file is uploaded
-	const [ result, error ] = await gcs.bucket(process.env.BUCKET).getFiles({ prefix: fileName });
-	const fileMetadata = await result[0].getMetadata();
-	const readyFileName = fileMetadata[0].name;
-
-	// If error on saving
-	if (readyFileName) {
-		return { features, ok: true };
-	} else {
-		return { message: 'The fetures cannot be uploaded', ok: false };
-	};
+	return { features, ok: true };
 }

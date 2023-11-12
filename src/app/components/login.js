@@ -60,11 +60,7 @@ export default function Login(props){
 								setAppState('flex');
 
 								// Check the sample list
-								if (samples.length) {			
-									setSampleSet(samples.map(sampleId => new Object({ value: sampleId, label: sampleId })));
-								} else {
-									setSampleSet(samples);
-								};
+								setSampleSet(samples);
 
 								// Check the project list
 								setProjectList(projects);

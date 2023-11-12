@@ -8,6 +8,7 @@ import saveProject from './saveProjectServer';
 import sampleServer from './sampleServer';
 import loadSample from './loadSampleServer';
 import updateSample from './updateSampleServer';
+import updateSampleName from './updateSampleNameServer';
 import Assessment from './assessment';
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 
@@ -522,12 +523,15 @@ function Sampling(props){
 					// Set message
 					setMessage('Generating sample');
 					setMessageColor('blue');
+
+					// Time
+					const time = new Date().getTime();
 					
 					// Generate sample set id
-					const id = `${username}_${region.value}_${year.value}_${new Date().getTime()}`;
+					const id = `${username}_${region.value}_${year.value}_${time}`;
 
 					// Generate sample
-					const result = await generateSample(year.value, region.value, id, { 
+					const result = await generateSample(year.value, region.value, id, username, time, { 
 						sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample 
 					});
 
@@ -594,7 +598,25 @@ function Sampling(props){
 
 			<div>
 				Sample name
-				<input value={sampleName} disabled={sampleGenerationDisabled} onInput={e => setSampleName(e.target.value)}/>	
+				<input value={sampleName} disabled={sampleGenerationDisabled}
+					onInput={e => {
+						// Set the sample name
+						setSampleName(e.target.value);
+					}}
+					onBlur={async e => {
+						// Change the sample set
+						const options = sampleSet.map(data => {
+							if (data.value == sampleId) {
+								data.label = sampleName;
+							}
+							return data;
+						});
+						setSampleSet(options);
+
+						// Change the sample name in the database
+						await updateSampleName({ sampleId, sampleName });
+					}}
+				/>	
 			</div>
 
 			<div className='menu flexible fill-vertical space'>
@@ -653,7 +675,7 @@ function Sampling(props){
 					};
 
 					// Update the sample in the server
-					await updateSample({ sampleId, features });
+					await updateSample({ sampleId, features, time: new Date().getTime() });
 		
 					// Set the current sample features
 					setSampleFeatures(features);
@@ -751,10 +773,10 @@ function pushOption(current, setter, selected, status){
  * @param {String} region 
  * @param {Number} sampleSize
  */
-async function generateSample(year, region, id, prop){
+async function generateSample(year, region, id, username, time, prop){
 	const { sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample } = prop;
 
-	const body = { year, region, sampleSize, sampleId: id };
+	const body = { year, region, sampleSize, sampleId: id, username, time };
 
 	// Generate sampel from earth engine
 	const { features, ok, message } = await sampleServer(body);

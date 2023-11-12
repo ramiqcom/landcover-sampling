@@ -27,17 +27,15 @@ export default async function main(body){
 		return { message: "No account with that username and password", ok: false };
 	};
 
-	// Find file with that name
-	const gcs = await storage();
-
 	// Check file list
-	const [ result, error ] = await gcs.bucket(process.env.BUCKET).getFiles({ prefix: `sample/${username}_` });
+	const sampleTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE}`;
+	const [ result ] = await bigquery.query(`SELECT sample_id, sample_name FROM ${sampleTable} WHERE username='${username}'`);
 	
 	// Sample list
 	const samples = [];
 	if (result.length) {
-		result.map(feat => samples.push(feat.name.split(/[\/.]/)[1]));
-	}
+		result.map(feat => samples.push({ value: feat.sample_id, label: feat.sample_name }));
+	};
 
 	// Check if there is any project locked to the account
 	const projectTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
@@ -45,7 +43,7 @@ export default async function main(body){
 	const projects = [];
 	if (projectQuery.length) {
 		projectQuery.map(feat => projects.push({ value: feat.project_id, label: feat.project_name }));
-	}
+	};
 
 	// Return if success
 	return { message: 'Login success', ok: true, samples, projects };
