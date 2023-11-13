@@ -73,6 +73,9 @@ function Project(props){
 		username,
 		selectedSample,
 		sampleId,
+		sampleSet, 
+		setSelectedSample,
+		setProjectList
 	} = props;
 
 	// Save project
@@ -89,15 +92,6 @@ function Project(props){
 
 	// Project name disabled
 	const [ projectNameDisabled, setProjectNameDisabled ] = useState(false);
-
-	// Enable to save project if the project if selected
-	useEffect(() => {
-		if (project || projectName) {
-			setSaveProjectDisabled(false);
-		} else {
-			setSaveProjectDisabled(true);
-		};
-	}, [ project, projectName ]);
 
 	// Years selection
 	let years = [ 2012, 2017, 2022 ];
@@ -145,12 +139,26 @@ function Project(props){
 	// Sample features
 	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 
+	// Selected sample set
+	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
+
+	// List of samples in the set
+	const [ sampleList, setSampleList ] = useState([]);
+
 	// Image url
 	const [ imageUrl, setImageUrl ] = useState(undefined);
 	const [ imageGeoJson, setImageGeoJson ] = useState(undefined);
 
 	// Load project function
 	async function loadProjectData(){
+		// Disabled button
+		toggleFeatures(true, [
+			setRegionYearDisabled,
+			setParameterDisabled,
+			setSaveProjectDisabled,
+			setProjectNameDisabled
+		]);
+
 		const { region, year, sample_id, selected_sample, visual } = await loadProject({ projectId });
 		
 		// Set region and year
@@ -159,14 +167,40 @@ function Project(props){
 
 		// Set visualization
 		const [ red, green, blue ] = JSON.parse(visual);
-		console.log(visual);
 		setRed({ value: red, label: red });
 		setGreen({ value: green, label: green });
 		setBlue({ value: blue, label: blue });
 
 		// Load image
 		await loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
+
+		// Load sample if it saved
+		if (sample_id) {
+			// Set the sample on map
+			const selectedSampleSet = sampleSet.filter(dict => dict.value == sample_id)[0];
+			setSelectedSampleSet(selectedSampleSet);
+
+			// Function to load the selected sample if the set already loaded
+			setTimeout(() => setSelectedSample({ value: selected_sample, label: selected_sample }), 2000);
+		}
+
+		// Enable button
+		toggleFeatures(false, [
+			setRegionYearDisabled,
+			setParameterDisabled,
+			setSaveProjectDisabled,
+			setProjectNameDisabled
+		]);
 	}
+
+	// Enable to save project if the project if selected
+	useEffect(() => {
+		if (project || projectName) {
+			setSaveProjectDisabled(false);
+		} else {
+			setSaveProjectDisabled(true);
+		};
+	}, [ project, projectName ]);
 
 	// Change the image sample etc if the project change
 	useEffect(() => {
@@ -198,6 +232,8 @@ function Project(props){
 		sampleFeatures, setSampleFeatures,
 		imageUrl, setImageUrl,
 		imageGeoJson, setImageGeoJson,
+		selectedSampleSet, setSelectedSampleSet,
+		sampleList, setSampleList,
 		...props
 	};
 
@@ -207,16 +243,19 @@ function Project(props){
 				<Select 
 					options={projectList}
 					value={project}
+					placeholder={'Save or select a project'}
 					onChange={value => {
 						setProject(value);
 						setProjectId(value.value);
 						setProjectName(value.label);
 					}}
 					className='select-menu'
-					style={{ flex: 4 }}
+					style={{ flex: 8 }}
 				/>
 
-				<button disabled={saveProjectDisabled} style={{ flex: 1 }} onClick={async () => {
+				<button style={{ flex: 1 }}>+</button>
+
+				<button disabled={saveProjectDisabled} style={{ flex: 1 }} className='glyphicon glyphicon-floppy-disk' onClick={async () => {
 					// Show error message if project name is empty
 					if (!projectName){
 						setMessage('Project name is empty!');
@@ -251,7 +290,6 @@ function Project(props){
 
 						// Save project
 						const response = await saveProject(body);
-						console.log(response);
 
 						// Condiitional if data is saved
 						if (response.ok){
@@ -268,13 +306,22 @@ function Project(props){
 							setRegionYearDisabled
 						]);
 					};
-				}}>Save project</button>
+				}}></button>
 			</div>
 
 			<div id='create-project' className='flexible vertical space'>
 				<div id='project-name'>
 					Project name
-					<input value={projectName} onInput={e => setProjectName(e.target.value)} disabled={projectNameDisabled} />
+					<input value={projectName} onInput={e => setProjectName(e.target.value)} disabled={projectNameDisabled} onBlur={e => {
+						const projects = projectList.map(dict => {
+							if (dict.value == projectId) {
+								dict.label = e.target.value;
+							};
+							return dict;
+						});
+						setProjectList(projects);
+					}}
+					/>
 				</div>
 
 				<Select
@@ -441,12 +488,12 @@ function Sampling(props){
 		sampleSet, setSampleSet,
 		sampleFeatures, setSampleFeatures,
 		sampleId, setSampleId,
-		selectedSample, setSelectedSample
+		selectedSample, setSelectedSample,
+		selectedSampleSet, setSelectedSampleSet,
+		sampleList, setSampleList,
 	} = props;
 
-	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
 	const [ sampleSize, setSampleSize ] = useState(10);
-	const [ sampleList, setSampleList ] = useState([]);
 	const [ selectedSampleFeatures, setSelectedSampleFeatures ] = useState(undefined);
 	const [ sampleName, setSampleName ] = useState(undefined);
 	const [ minSample, setMinSample ] = useState(undefined);
@@ -503,6 +550,9 @@ function Sampling(props){
 		if (selectedSampleSet) {
 			setSampleName(selectedSampleSet.label);
 			setSampleId(selectedSampleSet.value);
+
+			// Disabled button until the operation is done
+			toggleFeatures(true, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
 
 			if (selectedSampleSet.value) {
 				// Calling the samples
@@ -616,9 +666,10 @@ function Sampling(props){
 					className='select-menu'
 					styles={ { flex: 3 } }
 					isDisabled={sampleGenerationDisabled}
+					placeholder={'Generate or select a sample'}
 				/>
 
-				<button className='button-parameter' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={() => {
+				<button className='button-parameter glyphicon glyphicon-floppy-disk' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={() => {
 					// Disabled button
 					toggleFeatures(true, [
 						setSampleGenerationDisabled,
@@ -632,7 +683,7 @@ function Sampling(props){
 						setSampleSelectionDisabled,
 						setRegionYearDisabled,
 					]);
-				}}>Save</button>
+				}}></button>
 
 			</div>
 

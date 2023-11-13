@@ -6,29 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "gcp-build": "next build"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^7.3.0",
-    "@google-cloud/promisify": "^4.0.0",
     "@google-cloud/storage": "^7.5.0",
     "@google/earthengine": "^0.1.376",
     "@tensorflow/tfjs": "^4.13.0",
-    "@tensorflow/tfjs-backend-webgpu": "^4.13.0",
     "@turf/turf": "^6.5.0",
     "gridjs": "^6.0.6",
     "gridjs-react": "^6.0.1",
     "install": "^0.13.0",
-    "json-nd": "^1.0.0",
     "leaflet": "^1.9.4",
-    "ml-confusion-matrix": "^2.0.0",
     "next": "13.5.6",
     "node-self": "^1.0.2",
     "npm": "^10.2.3",
     "pify": "^6.1.0",
     "react": "^18",
     "react-dom": "^18",
-    "react-leaflet": "^4.2.1",
     "react-select": "^5.7.7"
   },
   "devDependencies": {
