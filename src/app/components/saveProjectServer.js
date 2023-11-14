@@ -37,7 +37,7 @@ export default async function main(body){
 	if (queryRows.length) {
 		// Query for update
 		querySave = `UPDATE ${table} 
-			SET project_name='${projectName}', region='${region}', year=${year}, sample_id='${sampleId}', selected_sample=${selectedSample}
+			SET project_name='${projectName}', region='${region}', year=${year}, sample_id='${sampleId}', selected_sample=${selectedSample}, visual='${visual}'
 			WHERE project_id='${projectId}'`;		
 	} else {
 		const values = `VALUES('${projectId}', '${projectName}', ${year}, '${region}', '${sampleId}', ${selectedSample}, '${username}', '${visual}')`;

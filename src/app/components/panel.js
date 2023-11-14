@@ -11,6 +11,7 @@ import updateSample from './updateSampleServer';
 import updateSampleName from './updateSampleNameServer';
 import Assessment from './assessment';
 import loadProject from './loadProjectServer';
+import deleteProject from './deleteProjectServer';
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 
 // Panel function as app handler
@@ -93,6 +94,9 @@ function Project(props){
 	// Project name disabled
 	const [ projectNameDisabled, setProjectNameDisabled ] = useState(false);
 
+	// New project button disabled
+	const [ createProjectDisabled, setCreateProjectDisabled ] = useState(false);
+
 	// Years selection
 	let years = [ 2012, 2017, 2022 ];
 	years = years.map(year => new Object({ label: year, value: year }));
@@ -150,13 +154,19 @@ function Project(props){
 	const [ imageGeoJson, setImageGeoJson ] = useState(undefined);
 
 	// Load project function
-	async function loadProjectData(){
+	async function loadProjectData(projectId){
+		// Set message
+		setMessage('Loading project...');
+		setMessageColor('blue');
+
 		// Disabled button
 		toggleFeatures(true, [
 			setRegionYearDisabled,
 			setParameterDisabled,
 			setSaveProjectDisabled,
-			setProjectNameDisabled
+			setProjectNameDisabled,
+			setCreateProjectDisabled,
+			setSampleGenerationDisabled,
 		]);
 
 		const { region, year, sample_id, selected_sample, visual } = await loadProject({ projectId });
@@ -189,8 +199,64 @@ function Project(props){
 			setRegionYearDisabled,
 			setParameterDisabled,
 			setSaveProjectDisabled,
-			setProjectNameDisabled
+			setProjectNameDisabled,
+			setCreateProjectDisabled,
+			setSampleGenerationDisabled,
 		]);
+	}
+
+	// Function to save project
+	async function saveProjectData({ projectId, projectName, region, year, red, green, blue, username, sampleId, selectedSample }){
+		// Show error message if project name is empty
+		if (!projectName){
+			setMessage('Project name is empty!');
+			setMessageColor('red');
+		} else {
+			// Save message
+			setMessage('Saving...');
+			setMessageColor('blue');
+
+			// Disabled some button
+			toggleFeatures(true, [
+				setProjectNameDisabled,
+				setRegionYearDisabled
+			]);
+			
+			// Create new project id if the inst already
+			if (!(project)) {
+				setProjectId(`${username}_${new Date().getTime()}`);
+			};
+
+			// Information needed to save project
+			const body = {
+				projectId,
+				projectName,
+				region: region.value,
+				year: year.value,
+				visual: JSON.stringify([ red.value, green.value, blue.value ]),
+				username,
+				sampleId: sampleId ? sampleId : null,
+				selectedSample: selectedSample ? selectedSample.value : null
+			};
+
+			// Save project
+			const response = await saveProject(body);
+
+			// Condiitional if data is saved
+			if (response.ok){
+				setMessage(response.message);
+				setMessageColor('green');
+			} else {
+				setMessage(`${response.message}: ${response.error}`);
+				setMessageColor('red');
+			};
+
+			// Turn on parameter button again
+			toggleFeatures(false, [
+				setProjectNameDisabled,
+				setRegionYearDisabled
+			]);
+		}
 	}
 
 	// Enable to save project if the project if selected
@@ -201,13 +267,6 @@ function Project(props){
 			setSaveProjectDisabled(true);
 		};
 	}, [ project, projectName ]);
-
-	// Change the image sample etc if the project change
-	useEffect(() => {
-		if (project) {
-			loadProjectData();
-		}
-	}, [ project ]);
 
 	// State list
 	const states = {
@@ -244,75 +303,51 @@ function Project(props){
 					options={projectList}
 					value={project}
 					placeholder={'Save or select a project'}
-					onChange={value => {
+					onChange={async value => {
 						setProject(value);
 						setProjectId(value.value);
 						setProjectName(value.label);
+						await loadProjectData(value.value);
 					}}
 					className='select-menu'
 					style={{ flex: 8 }}
 				/>
 
-				<button style={{ flex: 1 }}>+</button>
+				<button style={{ flex: 1 }} disabled={createProjectDisabled} onClick={async () => {
+					const newProjectId = `${username}_${new Date().getTime()}`;
+					const projectOptions = { value: newProjectId, label: newProjectId };
+					projectList.push({ value: newProjectId, label: newProjectId });
+					setProject(projectOptions);
+					setProjectName(newProjectId);
+					setProjectId(newProjectId);
+
+					// Save project
+					await saveProjectData({ projectId: newProjectId, projectName: newProjectId, region, year, red, green, blue, username, sampleId, selectedSample });
+				}}>+</button>
+
+				<button style={{ flex: 1 }} disabled={createProjectDisabled} onClick={async () => {
+					// Delete the project from the database
+					await deleteProject({ projectId });
+
+					// Change the project list
+					const projects = projectList.filter(dict => dict.value !== projectId);
+					setProjectList(projects);
+					
+					// Set the selected project
+					setProject(undefined);
+					setProjectName(undefined);
+					setProjectId(undefined);
+				}}>-</button>
 
 				<button disabled={saveProjectDisabled} style={{ flex: 1 }} className='glyphicon glyphicon-floppy-disk' onClick={async () => {
-					// Show error message if project name is empty
-					if (!projectName){
-						setMessage('Project name is empty!');
-						setMessageColor('red');
-					} else {
-						// Save message
-						setMessage('Saving...');
-						setMessageColor('blue');
-
-						// Disabled some button
-						toggleFeatures(true, [
-							setProjectNameDisabled,
-							setRegionYearDisabled
-						]);
-						
-						// Create new project id if the inst already
-						if (!(project)) {
-							setProjectId(`${username}_${new Date().getTime()}`);
-						};
-
-						// Information needed to save project
-						const body = {
-							projectId,
-							projectName,
-							region: region.value,
-							year: year.value,
-							visual: JSON.stringify([ red.value, green.value, blue.value ]),
-							username,
-							sampleId: sampleId ? sampleId : null,
-							selectedSample: selectedSample ? selectedSample.value : null
-						};
-
-						// Save project
-						const response = await saveProject(body);
-
-						// Condiitional if data is saved
-						if (response.ok){
-							setMessage(response.message);
-							setMessageColor('green');
-						} else {
-							setMessage(`${response.message}: ${response.error}`);
-							setMessageColor('red');
-						};
-
-						// Turn on parameter button again
-						toggleFeatures(false, [
-							setProjectNameDisabled,
-							setRegionYearDisabled
-						]);
-					};
+					await saveProjectData({ projectId, projectName, region, year, red, green, blue, username, sampleId, selectedSample });
 				}}></button>
 			</div>
 
 			<div id='create-project' className='flexible vertical space'>
 				<div id='project-name'>
 					Project name
-					<input value={projectName} onInput={e => setProjectName(e.target.value)} disabled={projectNameDisabled} onBlur={e => {
+					<input value={projectName} onInput={e => setProjectName(e.target.value)} disabled={projectNameDisabled} onChange={e => {
 						const projects = projectList.map(dict => {
 							if (dict.value == projectId) {
 								dict.label = e.target.value;
@@ -320,6 +355,7 @@ function Project(props){
 							return dict;
 						});
 						setProjectList(projects);
+						setProject(projects.filter(dict => dict.value == e.target.value)[0]);
 					}}
 					/>
 				</div>
@@ -361,7 +397,7 @@ function Project(props){
 							setSelectionDisplay('none');
 							setAssessmentDisplay('none');
 						}}>
-							Sampling
+							Validation
 						</button>
 
 						<button className='select-button' disabled={assessmentButtonDisabled} onClick={() => {
@@ -378,7 +414,7 @@ function Project(props){
 					
 					<div id='menu' className='flexible-space'>
 						<Selection {...states} />
-						<Sampling {...states} />
+						<Validation {...states} />
 						<Assessment {...states} />
 					</div>
 				</div>
@@ -475,7 +511,7 @@ function Selection(props){
 }
 
 // Sampling components
-function Sampling(props){
+function Validation(props){
 	const { 
 		samplingDisplay,
 		year, region,
@@ -612,7 +648,7 @@ function Sampling(props){
 					]);
 
 					// Set message
-					setMessage('Generating sample');
+					setMessage('Generating sample...');
 					setMessageColor('blue');
 
 					// Time
@@ -669,7 +705,11 @@ function Sampling(props){
 					placeholder={'Generate or select a sample'}
 				/>
 
-				<button className='button-parameter glyphicon glyphicon-floppy-disk' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={() => {
+				<button className='button-parameter glyphicon glyphicon-floppy-disk' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={async () => {
+					// Set the message when saving sample
+					setMessage('Saving samples...');
+					setMessageColor('blue');
+
 					// Disabled button
 					toggleFeatures(true, [
 						setSampleGenerationDisabled,
@@ -677,12 +717,19 @@ function Sampling(props){
 						setRegionYearDisabled,
 					]);
 
+					// Update the sample in the server
+					await updateSample({ sampleId, features: sampleFeatures, time: new Date().getTime() });
+
 					// Enable button again
 					toggleFeatures(false, [
 						setSampleGenerationDisabled,
 						setSampleSelectionDisabled,
 						setRegionYearDisabled,
 					]);
+
+					// Set the message when saving sample
+					setMessage('Sample successfully saved');
+					setMessageColor('green');
 				}}></button>
 
 			</div>
