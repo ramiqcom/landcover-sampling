@@ -8,7 +8,7 @@ import bq from './bq';
  * @param {{ projectId: number, projectName: string, region: string, year: number, username: string, featuresId: number, selectedFeature: number }} body 
  * @returns {Promise.<{ message: string, ok: boolean, error: string | undefined}>}
  */
-export default async function main(body){
+export async function saveProject(body){
 	// Bigquery client
 	const bigquery = await bq();
 
@@ -53,4 +53,37 @@ export default async function main(body){
   } catch (error) {
     return { message: 'Project fail to save', error: error.message, ok: false }
   };
+}
+
+/**
+ * Delete project
+ * @param {{ projectId: string }} body 
+ */
+export async function deleteProject(body){
+	const { projectId } = body;
+	const bigquery = await bq();
+	await bigquery.query(`
+		DELETE FROM ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}
+		WHERE project_id='${projectId}'
+	`);
+}
+
+/**
+ * Load sample from selected value
+ * @param {{ projectId: string }} body
+ * @returns {{ region: string, year: string, sample_id: string, selected_sample: number, visual: string }}
+ */
+export async function loadProject(body){
+	const { projectId } = body;
+
+	// Bigquery client
+	const bigquery = await bq();
+
+	// Project table address
+	const table = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
+
+	// Query the data from the 
+	const [ result ] = await bigquery.query(`SELECT * FROM ${table} WHERE project_id='${projectId}'`);
+	
+	return result[0];
 }

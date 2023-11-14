@@ -4,14 +4,9 @@ import Select from 'react-select';
 import Login from './login';
 import { Map, Tile, Features, Point } from './map';
 import tile from './tileServer';
-import saveProject from './saveProjectServer';
-import sampleServer from './sampleServer';
-import loadSample from './loadSampleServer';
-import updateSample from './updateSampleServer';
-import updateSampleName from './updateSampleNameServer';
+import { saveProject, loadProject, deleteProject } from './projectServer';
+import { createSample, loadSample, updateSample, updateSampleName } from './sampleServer';
 import Assessment from './assessment';
-import loadProject from './loadProjectServer';
-import deleteProject from './deleteProjectServer';
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 
 // Panel function as app handler
@@ -917,7 +912,7 @@ async function generateSample(year, region, id, username, time, prop){
 	const body = { year, region, sampleSize, sampleId: id, username, time };
 
 	// Generate sampel from earth engine
-	const { features, ok, message } = await sampleServer(body);
+	const { features, ok, message } = await createSample(body);
 	if (ok) {
 		setSampleFeatures(features);
 	} else {
