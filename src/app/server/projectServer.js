@@ -1,7 +1,10 @@
 'use server';
 
 // Import packages
-import bq from './bq';
+import { bigquery } from './dataClient';
+
+// Project table
+const projectTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
 
 /**
  * Function to save project
@@ -9,12 +12,6 @@ import bq from './bq';
  * @returns {Promise.<{ message: string, ok: boolean, error: string | undefined}>}
  */
 export async function saveProject(body){
-	// Bigquery client
-	const bigquery = await bq();
-
-	// Project table address
-	const table = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
-
 	// Process information
 	const {
 		projectId,
@@ -28,7 +25,7 @@ export async function saveProject(body){
 	} = body;
 
 	// Check query to insert or update
-	const [ queryRows ] = await bigquery.query(`SELECT * FROM ${table} WHERE project_id='${projectId}'`);
+	const [ queryRows ] = await bigquery.query(`SELECT * FROM ${projectTable} WHERE project_id='${projectId}'`);
 
 	// Query save
 	let querySave;
@@ -36,14 +33,14 @@ export async function saveProject(body){
 	// Check length
 	if (queryRows.length) {
 		// Query for update
-		querySave = `UPDATE ${table} 
+		querySave = `UPDATE ${projectTable} 
 			SET project_name='${projectName}', region='${region}', year=${year}, sample_id='${sampleId}', selected_sample=${selectedSample}, visual='${visual}'
 			WHERE project_id='${projectId}'`;		
 	} else {
 		const values = `VALUES('${projectId}', '${projectName}', ${year}, '${region}', '${sampleId}', ${selectedSample}, '${username}', '${visual}')`;
 
 		// Query for insert data
-		querySave = `INSERT INTO ${table} ${values}`;
+		querySave = `INSERT INTO ${projectTable} ${values}`;
 	};
 
 	// Status
@@ -61,9 +58,8 @@ export async function saveProject(body){
  */
 export async function deleteProject(body){
 	const { projectId } = body;
-	const bigquery = await bq();
 	await bigquery.query(`
-		DELETE FROM ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}
+		DELETE FROM ${projectTable}
 		WHERE project_id='${projectId}'
 	`);
 }
@@ -76,11 +72,8 @@ export async function deleteProject(body){
 export async function loadProject(body){
 	const { projectId } = body;
 
-	// Bigquery client
-	const bigquery = await bq();
-
 	// Project table address
-	const table = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_PROJECT}`;
+	const table = `${projectTable}`;
 
 	// Query the data from the 
 	const [ result ] = await bigquery.query(`SELECT * FROM ${table} WHERE project_id='${projectId}'`);

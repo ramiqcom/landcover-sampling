@@ -5,8 +5,10 @@ import 'node-self';
 import ee from '@google/earthengine';
 import { auth, init } from './eePromise';
 import pify from 'pify';
-import storage from './storage';
-import bq from './bq';
+import { storage, bigquery } from './dataClient';
+
+// Sample table
+const sampleTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE}`;
 
 /**
  * Function to generate sample
@@ -46,19 +48,17 @@ export async function createSample(body){
 
 	// Save the file to cloud storage
 	const fileName = `sample/${sampleId}.geojson`;
-	const gcs = await storage();
 	features.properties = {
 		region,
 		year,
 		sampleId,
 		sampleName: sampleId
 	};
-	await gcs.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
+	await storage.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
 	
 	// Add log to database
-	const bigquery = await bq();
 	const valuesTable = `VALUES ('${sampleId}', '${sampleId}', '${username}', ${time}, ${time})`;
-	await bigquery.query(`INSERT INTO ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE} ${valuesTable}`);
+	await bigquery.query(`INSERT INTO ${sampleTable} ${valuesTable}`);
 
 	return { features, ok: true };
 }
@@ -74,8 +74,7 @@ export async function loadSample(body){
 
 	// Query sample
 	try {
-		const gcs = await storage();
-		const file = await gcs.bucket(process.env.BUCKET).file(`sample/${sampleId}.geojson`).download();
+		const file = await storage.bucket(process.env.BUCKET).file(`sample/${sampleId}.geojson`).download();
 		const geojson = JSON.parse(file[0].toString());
 		return { features: geojson, ok: true };
 	} catch (error) {
@@ -93,12 +92,9 @@ export async function updateSample(body) {
 
 	// Save the file to cloud storage
 	const fileName = `sample/${sampleId}.geojson`;
-	const gcs = await storage();
-	await gcs.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
+	await storage.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
 
-	// Add log to database
-	const bigquery = await bq();
-	const sampleTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE}`;
+	// Update in the bigquery
 	await bigquery.query(`UPDATE ${sampleTable} SET last_change=${time} WHERE sample_id='${sampleId}'`);
 }
 
@@ -110,10 +106,14 @@ export async function updateSampleName(body){
 	// Parameter for saving sample name
 	const { sampleId, sampleName } = body;
 
-	// Load bigquery client
-	const bigquery = await bq();
-
-	// Save to the database
-	const sampleTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE}`;
+	// Update sample name in the bigquery
 	await bigquery.query(`UPDATE ${sampleTable} SET sample_name='${sampleName}' WHERE sample_id='${sampleId}'`);
+}
+
+export async function deleteSample(body){
+	// Parameter to delete sample
+	const { sampleId } = body;
+
+	// Delete sample from database
+	await bigquery.query(`DELETE FROM ${sampleTable} WHERE sample_id='${sampleId}'`);
 }

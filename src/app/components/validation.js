@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Select from 'react-select';
 import { toggleFeatures } from "./utilities";
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
-import { createSample, loadSample, updateSample, updateSampleName } from '../server/sampleServer';
+import { createSample, loadSample, updateSample, updateSampleName, deleteSample } from '../server/sampleServer';
 import { Map, Features, Point } from "./map";
 
 // Validation components
@@ -201,6 +201,26 @@ export default function Validation(props){
 					placeholder={'Generate or select a sample'}
 				/>
 
+				<button className="button-parameter" style={{ flex: 1 }} disabled={sampleSelectionDisabled} onClick={async () => {
+					// Delete the sample in the database
+					await deleteSample({ sampleId });
+					
+					// Change the new sample options where it isnt deleted
+					const newOptions = sampleSet.filter(dict => dict.value !== sampleId);
+					setSampleSet(newOptions);
+					
+					// Delete features in the map
+					Features.clearLayers();
+					Point.clearLayers();
+
+					// Set the sample name, id, and selected to none
+					if (newOptions.length){
+						setSelectedSampleSet(newOptions[0]);
+					} else {
+						setSelectedSampleSet(undefined);
+					}
+				}}>-</button>
+
 				<button className='button-parameter glyphicon glyphicon-floppy-disk' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={async () => {
 					// Set the message when saving sample
 					setMessage('Saving samples...');
@@ -232,7 +252,7 @@ export default function Validation(props){
 
 			<div>
 				Sample name
-				<input value={sampleName} disabled={sampleGenerationDisabled}
+				<input value={sampleName} disabled={sampleSelectionDisabled}
 					onInput={e => {
 						// Set the sample name
 						setSampleName(e.target.value);

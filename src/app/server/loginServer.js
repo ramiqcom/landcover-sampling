@@ -1,7 +1,7 @@
 'use server';
 
-// Import packages
-import bq from "./bq";
+// Import bigquery client
+import { bigquery } from "./dataClient";
 
 /**
  * Function to login
@@ -11,9 +11,6 @@ import bq from "./bq";
 export default async function main(body){
 	// Body
 	const { username, password } = body;
-
-	// Bigquery client
-	const bigquery = await bq();
 
 	// Login query
 	const login = `SELECT * FROM ${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_LOGIN} WHERE username='${username}' AND password='${password}'`

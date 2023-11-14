@@ -208,7 +208,7 @@ function Project(props){
 			setMessageColor('red');
 		} else {
 			// Save message
-			setMessage('Saving...');
+			setMessage('Saving project...');
 			setMessageColor('blue');
 
 			// Disabled some button
