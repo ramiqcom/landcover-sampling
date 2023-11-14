@@ -1,6 +1,6 @@
 // Import packages
 import { useState } from 'react';
-import loginServer from './loginServer';
+import loginServer from '../server/loginServer';
 
 export default function Login(props){
 	const { 

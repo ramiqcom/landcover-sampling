@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import Login from './login';
 import { Map, Tile, Features, Point } from './map';
-import tile from './tileServer';
-import { saveProject, loadProject, deleteProject } from './projectServer';
-import { createSample, loadSample, updateSample, updateSampleName } from './sampleServer';
+import tile from '../server/tileServer';
+import { saveProject, loadProject, deleteProject } from '../server/projectServer';
+import { createSample, loadSample, updateSample, updateSampleName } from '../server/sampleServer';
 import Assessment from './assessment';
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 

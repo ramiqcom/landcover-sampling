@@ -1,7 +1,6 @@
 'use server';
 
 // Import packages
-import storage from "./storage";
 import bq from "./bq";
 
 /**
