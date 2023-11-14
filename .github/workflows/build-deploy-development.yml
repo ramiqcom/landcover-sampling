@@ -1,0 +1,17 @@
+name: Build and Deploy to Dev Project
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: 'Deploy to Cloud Run Dev Project'
+    uses: fairatmos/infra/.github/workflows/deploy-to-cloud-run.yaml@main
+    with:
+      env: development
+      repoName: landcover-sampling
+      servicePort: 3000
+      serviceName: landcover-sampling
+      dockerBuildArgs: |
+        "APP_NAME=landcover-sampling"
+        "APP_PORT=3000"
