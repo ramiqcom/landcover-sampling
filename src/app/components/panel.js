@@ -3,10 +3,12 @@ import { useEffect, useState } from 'react';
 import Select from 'react-select';
 import Login from './login';
 import Validation from './validation';
+import Labelling from './labelling';
 import Assessment from './assessment';
 import { toggleFeatures } from './utilities';
 import { Map, Tile } from './map';
 import tile from '../server/tileServer';
+import dataRegion from './roi.json' assert { type: 'json' }
 import { saveProject, loadProject, deleteProject } from '../server/projectServer';
 
 // Panel function as app handler
@@ -97,7 +99,7 @@ function Project(props){
 	years = years.map(year => new Object({ label: year, value: year }));
 
 	// Region list
-	let regions = [ 'Sumatera', 'KepriBabel', 'JawaBali', 'Kalimantan', 'Sulawesi', 'Nusra', 'Maluku', 'MalukuUtara', 'Papua', 'PeninsularMalaysia', 'BorneoMalaysia' ];
+	let regions = Object.keys(dataRegion);
 	regions = regions.map(region => new Object({ label: region, value: region }));
 
 	// Year state
@@ -123,6 +125,9 @@ function Project(props){
 	// Sampling display
 	const [ samplingDisplay, setSamplingDisplay ] = useState('none');
 
+	// Labelling display
+	const [ labellingDisplay, setLabellingDisplay ] = useState('none');
+
 	// Assessment display
 	const [ assessmentDisplay, setAssessmentDisplay ] = useState('none')
 
@@ -130,6 +135,8 @@ function Project(props){
 	const [ imageButtonDisabled, setImageButtonDisabled ] = useState(true);
 	const [ samplingButtonDisabled, setSamplingButtonDisabled ] = useState(false);
 	const [ assessmentButtonDisabled, setAssessmentButtonDisabled ] = useState(false);
+	const [ labellingButtonDisabled, setLabellingButtonDisabled ] = useState(false);
+
 
 	// Sample parameter disabled button
 	const [ sampleGenerationDisabled, setSampleGenerationDisabled ] = useState(false);
@@ -288,6 +295,7 @@ function Project(props){
 		imageGeoJson, setImageGeoJson,
 		selectedSampleSet, setSelectedSampleSet,
 		sampleList, setSampleList,
+		labellingDisplay, setLabellingDisplay,
 		...props
 	};
 
@@ -374,34 +382,61 @@ function Project(props){
 				<div id='parameter-panel' className='flexible vertical'>
 					<div id='button-menu' className='flexible'>
 						<button className='select-button' disabled={imageButtonDisabled} onClick={() => {
+							Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
+
 							setImageButtonDisabled(true);
 							setSamplingButtonDisabled(false);
 							setAssessmentButtonDisabled(false);
+							setLabellingButtonDisabled(false);
 							setSamplingDisplay('none');
 							setSelectionDisplay('flex');
 							setAssessmentDisplay('none');
+							setLabellingDisplay('none');
 						}}>
 							Image
 						</button>
 
+						<button className='select-button' disabled={labellingButtonDisabled} onClick={() => {
+							Map.pm.controlsVisible() ? null :  Map.pm.toggleControls();
+
+							setImageButtonDisabled(false);
+							setSamplingButtonDisabled(false);
+							setAssessmentButtonDisabled(false);
+							setLabellingButtonDisabled(true);
+							setSamplingDisplay('none');
+							setSelectionDisplay('none');
+							setAssessmentDisplay('none');
+							setLabellingDisplay('flex');
+						}}>
+							Labelling
+						</button>
+
 						<button className='select-button' disabled={samplingButtonDisabled} onClick={() => {
+							Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
+
 							setImageButtonDisabled(false);
 							setSamplingButtonDisabled(true);
 							setAssessmentButtonDisabled(false);
+							setLabellingButtonDisabled(false);
 							setSamplingDisplay('flex');
 							setSelectionDisplay('none');
 							setAssessmentDisplay('none');
+							setLabellingDisplay('none');
 						}}>
 							Validation
 						</button>
 
 						<button className='select-button' disabled={assessmentButtonDisabled} onClick={() => {
+							Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
+
 							setImageButtonDisabled(false);
 							setSamplingButtonDisabled(false);
 							setAssessmentButtonDisabled(true);
+							setLabellingButtonDisabled(false);
 							setSamplingDisplay('none');
 							setSelectionDisplay('none');
 							setAssessmentDisplay('flex');
+							setLabellingDisplay('none');
 						}}>
 							Assessment
 						</button>
@@ -409,6 +444,7 @@ function Project(props){
 					
 					<div id='menu' className='flexible-space'>
 						<Selection {...states} />
+						<Labelling {...states} />
 						<Validation {...states} />
 						<Assessment {...states} />
 					</div>
@@ -526,26 +562,29 @@ async function loadImage(year, region, [ red, green, blue ], setImageUrl, setIma
 	};
 
 	// Load tile and geojson with server action
-	const result = await tile(body);
-
-	// Set the image url
-	setImageUrl(result.url);
-	setImageGeoJson(result.geojson);
+	const { url, ok, message } = await tile(body);
 					
 	// Condiitonal if the function is success
-	if (result.ok){
+	if (ok){
+		// Set image url
+		setImageUrl(url);
+
+		// Set the geojson
+		const geojson = dataRegion[region];
+		setImageGeoJson(geojson);
+
 		// Add tile to map
-		Tile.setUrl(result.url);
+		Tile.setUrl(url);
 		
 		// Zoom to tile
-		const geojson = L.geoJSON(result.geojson).getBounds();
-		Map.fitBounds(geojson, { maxZoom: 14 });
+		const bounds = L.geoJSON(geojson).getBounds();
+		Map.fitBounds(bounds, { maxZoom: 14 });
 
 		// Hide message
 		setMessage(undefined);
 	} else {
 		// Show error message
-		setMessage(result.message);
+		setMessage(message);
 		setMessageColor('red');
 	};
 }

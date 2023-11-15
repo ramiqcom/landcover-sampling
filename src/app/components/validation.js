@@ -125,7 +125,7 @@ export default function Validation(props){
 	}, [ sampleFeatures ]);
 
 	return (
-		<div id='sampling' className='flexible vertical space' style={{ display: samplingDisplay }}>
+		<div id='validation' className='flexible vertical space' style={{ display: samplingDisplay }}>
 			
 			<div className='menu flexible fill-vertical space'>
 

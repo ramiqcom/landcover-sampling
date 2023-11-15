@@ -94,7 +94,7 @@ function LayerCheckbox(prop) {
 				<div style={{ border: '3px solid gold', borderRadius: '100%', height: '10px', width: '10px' }}></div>
 
 				<div style={{ flex: 2 }}>
-					Selected sample 
+					Selected validation 
 				</div>
 
 				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacitySelected} disabled={sampleCheckboxDisabled} onChange={e => {
@@ -114,7 +114,7 @@ function LayerCheckbox(prop) {
 				<div style={{ border: '3px solid green', borderRadius: '100%', height: '10px', width: '10px' }}></div>
 
 				<div style={{ flex: 2 }}>
-					Labelled Sample
+					Labelled validation
 				</div>
 
 				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacityLabelSample} disabled={sampleCheckboxDisabled} onChange={e => {
@@ -134,13 +134,23 @@ function LayerCheckbox(prop) {
 				<div style={{ border: '3px solid blue', borderRadius: '100%', height: '10px', width: '10px' }}></div>
 
 				<div style={{ flex: 2 }}>
-					Unlabelled Sample
+					Unlabelled validation
 				</div>
 
 				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacitySample} disabled={sampleCheckboxDisabled} onChange={e => {
 					setOpacitySample(e.target.value);
 					Features.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
 				}}/>
+			</div>
+
+			<div className='flexible start center1' style={{ gap: '0.5vh' }}>
+				<input type='checkbox' /> 
+
+				<div style={{ flex: 2 }}>
+					Drawed label
+				</div>
+
+				<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} />
 			</div>
 
 			<div className='flexible start center1' style={{ gap: '0.5vh' }}> 

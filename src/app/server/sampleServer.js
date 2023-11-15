@@ -10,6 +10,9 @@ import { storage, bigquery } from './dataClient';
 // Sample table
 const sampleTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_SAMPLE}`;
 
+// Labelling table
+const labelTable = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_LABELLING}`;
+
 /**
  * Function to generate sample
  * @param {{ region: string, year: number, sampleSize: number, sampleId: string, username: string, time: number }} body 
@@ -116,4 +119,67 @@ export async function deleteSample(body){
 
 	// Delete sample from database
 	await bigquery.query(`DELETE FROM ${sampleTable} WHERE sample_id='${sampleId}'`);
+}
+
+/**
+ * Function to generate agriculture sample
+ * @param {{ region: string, year: number }} body
+ * @returns {Promise.<{ features: GeoJSON | undefined, ok: boolean }>}
+ */
+export async function agriSample(body){
+	const { sampleId, region, year, type } = body;
+
+	// Image collection
+	const collection = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`;
+
+	// Get the image
+	const image = ee.Image(`${collection}/${region}_${year}`);
+
+	// EVI
+	const evi = image.expression('EVI = (2.5 * (NIR - RED)) / (NIR + 6 * RED - 7.5 * BLUE + 1)', {
+		NIR: image.select('B5'),
+		RED: image.select('B4'),
+		BLUE: image.select('B2')
+	});
+
+	// Group
+	const group = ee.Image(0).where(evi.lte(0), 1)
+		.where(evi.gt(0).and(evi.lte(0.2)), 2)
+		.where(evi.gt(0.2).and(evi.lte(0.4)), 3)
+		.where(evi.gt(0.4).and(evi.lte(0.6)), 4)
+		.where(evi.gt(0.6), 5)
+		.selfMask()
+		.rename('group');
+
+	// Sample
+	const sample = group.stratifiedSample({
+		numPoints: 2000,
+		region: image.geometry(),
+		geometries: true
+	});
+	
+	// Features
+	const evaluateFeatures = pify(sample.evaluate, { multiArgs: true, errorFirst: false }).bind(sample);
+	const [ features, errorMessage ] = await evaluateFeatures();
+
+	// Return evaluated features
+	if (errorMessage) {
+		return { message: errorMessage, ok: false };
+	};
+
+	// Save the file to cloud storage
+	const fileName = `sample_labelling/${sampleId}.geojson`;
+	features.properties = {
+		region,
+		year,
+		sampleId,
+		sampleName: sampleId
+	};
+	await storage.bucket(process.env.BUCKET).file(fileName).save(JSON.stringify(features));
+	
+	// Add log to database
+	const valuesTable = `VALUES ('${sampleId}', '${sampleId}', '${username}', ${time}, ${time}, ${type})`;
+	await bigquery.query(`INSERT INTO ${labelTable} ${valuesTable}`);
+
+	return { features, ok: true };
 }

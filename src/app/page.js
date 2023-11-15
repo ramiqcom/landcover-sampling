@@ -34,7 +34,11 @@ export default function Home() {
   return (
     <>
       <ConfusionMatrix {...states} />
-      <Layers {...states} />
+
+      <div className='flexible vertical space' id='floating'>
+        <Layers {...states} />
+      </div>
+      
       <Canvas />
       <Panel {...states} />
       <Script

@@ -9,7 +9,9 @@ export let lulcValue = lulcArray.map(array => array[1].value);
 export let lulcValueString = lulcValue.map(value => String(value));
 export let lulcValueLabel = [];
 export let lulcValueScaled = [];
+export let lulcValuePalette = [];
 for (let i = 0; i <= lulcArray.length; i++) {
 	lulcValueLabel[lulcValue[i]] = lulcLabel[i];
 	lulcValueScaled[lulcValue[i]] = i + 1;
+	lulcValuePalette[lulcValue[i]] = lulcPalette[i];
 }

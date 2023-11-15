@@ -3,7 +3,6 @@
 // Import packages
 import 'node-self';
 import ee from '@google/earthengine';
-import pify from 'pify';
 import { auth, init, mapid } from './eePromise';
 
 // Main function
@@ -26,47 +25,23 @@ async function tile(body){
 	// Payload
 	const { region, year, bands } = body;
 
-	// Image name
-	const imageName = region + '_' + year; 
-
 	// Data prefix
-	var prefix = `projects/${process.env.IMAGE_PROJECT}/assets/calibrated_landsat_v2_multitemporal/Landsat_`;
-	var suffix = '_Calibrated_Modis_v2_multitemporal';
-
-	// Variables
-	let image;
-	let roi;
+	const collection = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`;
 
 	// Get the new image
-	if (region !== 'PeninsularMalaysia' && region !== 'BorneoMalaysia'){
-		image = ee.Image(prefix + imageName + suffix);
-		roi = image.geometry();
-	} else {
-		image = ee.ImageCollection(`projects/${process.env.IMAGE_PROJECT}/assets/calibrated_landsat_v6_multTemporalWithMalaysia`).filter(
-			ee.Filter.and(
-				ee.Filter.eq('year', year),
-				ee.Filter.eq('region', region)
-			)
-		);
-		roi = image.geometry();
-		image = image.median().clip(roi);
-	};
-
-	// Evaluated geometry
-	const evaluateRoi = pify(roi.evaluate, { multiArgs: true, errorFirst: false }).bind(roi);
-	const [ geojson, error ] = await evaluateRoi();
+	const image = ee.Image(`${collection}/${region}_${year}`);
 
 	// Visualized image
 	const visualized = visual(image, bands);
 
 	// Get visualized data
-	const [obj, err] = await mapid({ image: visualized });
+	const [ obj, err ] = await mapid({ image: visualized });
 
 	// Conditional if failed
 	if (err) {
 		return { message: err, ok: false };
 	} else {
-		return { url: obj.urlFormat, geojson, ok: true };
+		return { url: obj.urlFormat, ok: true };
 	};
 }
 

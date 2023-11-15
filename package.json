@@ -10,6 +10,7 @@
     "gcp-build": "next build"
   },
   "dependencies": {
+    "@geoman-io/leaflet-geoman-free": "^2.14.2",
     "@google-cloud/bigquery": "^7.3.0",
     "@google-cloud/storage": "^7.5.0",
     "@google/earthengine": "^0.1.376",
