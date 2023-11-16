@@ -4,6 +4,7 @@
 @import url('../../node_modules/gridjs/dist//theme/mermaid.css');
 @import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css');
 @import url('../../node_modules/@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
 body {
 	margin: 0;

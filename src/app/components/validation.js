@@ -221,7 +221,7 @@ export default function Validation(props){
 					}
 				}}>-</button>
 
-				<button className='button-parameter glyphicon glyphicon-floppy-disk' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={async () => {
+				<button className='button-parameter material-icons' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={async () => {
 					// Set the message when saving sample
 					setMessage('Saving samples...');
 					setMessageColor('blue');
@@ -246,7 +246,7 @@ export default function Validation(props){
 					// Set the message when saving sample
 					setMessage('Sample successfully saved');
 					setMessageColor('green');
-				}}></button>
+				}}>&#xe161;</button>
 
 			</div>
 
@@ -293,10 +293,10 @@ export default function Validation(props){
 					selectedSample.value !== maxSample ? setSelectedSample({ label: current + 1, value: current + 1 }) : null;
 				}}> {'>'} </button>
 
-				<button className='fa fa-location-arrow button-parameter' disabled={sampleSelectionDisabled} onClick={() => {
+				<button style={{ flex: 1 }} className='button-parameter material-icons' disabled={sampleSelectionDisabled} onClick={() => {
 					const bounds = Point.getBounds();
 					Map.fitBounds(bounds, { maxZoom: 14 });
-				}}></button>
+				}}>&#xe0c8;</button>
 			</div>
 
 			<Select 

@@ -41,6 +41,14 @@ export default async function main(body){
 		projectQuery.map(feat => projects.push({ value: feat.project_id, label: feat.project_name }));
 	};
 
+	// Check for the sample in agriculture
+	const labelSampleAgri = `${process.env.PROJECT}.${process.env.DATASET_ACCOUNT}.${process.env.TABLE_LABELLING}`;
+	const [ agriQuery ] = await bigquery.query(`SELECT * FROM ${labelSampleAgri} WHERE (username='${username}' AND type='agri')`);
+	const agri = [];
+	if (agriQuery.length) {
+		agriQuery.map(feat => agri.push({ value: feat.sample_id, label: feat.sample_id }));
+	};
+
 	// Return if success
-	return { message: 'Login success', ok: true, samples, projects };
+	return { message: 'Login success', ok: true, samples, projects, agri };
 }

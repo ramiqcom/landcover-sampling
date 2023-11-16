@@ -22,6 +22,7 @@ export default function Panel(prop){
 	const [ sampleSet, setSampleSet ] = useState([]);
 	const [ selectedSample, setSelectedSample ] = useState(undefined);
 	const [ sampleId, setSampleId ] = useState(undefined);
+	const [ sampleAgriList, setSampleAgriList ] = useState([]);
 
 	// List of state
 	const states = {
@@ -34,6 +35,7 @@ export default function Panel(prop){
 		sampleSet, setSampleSet,
 		selectedSample, setSelectedSample,
 		sampleId, setSampleId,
+		sampleAgriList, setSampleAgriList,
 		...prop
 	};
 
@@ -44,7 +46,6 @@ export default function Panel(prop){
 			</div>
 
 			<Login {...states} />
-
 			<Application {...states} />
 
 		</div>
@@ -73,7 +74,8 @@ function Project(props){
 		sampleId,
 		sampleSet, 
 		setSelectedSample,
-		setProjectList
+		setProjectList,
+		setSelectedMenu
 	} = props;
 
 	// Save project
@@ -382,7 +384,7 @@ function Project(props){
 				<div id='parameter-panel' className='flexible vertical'>
 					<div id='button-menu' className='flexible'>
 						<button className='select-button' disabled={imageButtonDisabled} onClick={() => {
-							Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
+							setSelectedMenu('image');
 
 							setImageButtonDisabled(true);
 							setSamplingButtonDisabled(false);
@@ -397,7 +399,7 @@ function Project(props){
 						</button>
 
 						<button className='select-button' disabled={labellingButtonDisabled} onClick={() => {
-							Map.pm.controlsVisible() ? null :  Map.pm.toggleControls();
+							setSelectedMenu('labelling');
 
 							setImageButtonDisabled(false);
 							setSamplingButtonDisabled(false);
@@ -412,7 +414,7 @@ function Project(props){
 						</button>
 
 						<button className='select-button' disabled={samplingButtonDisabled} onClick={() => {
-							Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
+							setSelectedMenu('validation');
 
 							setImageButtonDisabled(false);
 							setSamplingButtonDisabled(true);
@@ -427,8 +429,8 @@ function Project(props){
 						</button>
 
 						<button className='select-button' disabled={assessmentButtonDisabled} onClick={() => {
-							Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
-
+							setSelectedMenu('assessment');
+							
 							setImageButtonDisabled(false);
 							setSamplingButtonDisabled(false);
 							setAssessmentButtonDisabled(true);

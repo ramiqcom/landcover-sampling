@@ -20,6 +20,14 @@ export default function Home() {
   const [ cfDisplay, setCfDisplay ] = useState('none');
   const [ cfData, setCfData ] = useState([]);
 
+  const [ agriCheckbox, setAgriCheckbox ] = useState(true);
+  const [ selectedAgriCheckbox, setSelectedAgriCheckbox ] = useState(true);
+  const [ agriCheckboxDisabled, setAgriCheckboxDisabled ] = useState(true);
+  const [ selectedAgriCheckboxDisabled, setSelectedAgriCheckboxDisabled ] = useState(true);
+
+  	// Selected option
+	const [ selectedMenu, setSelectedMenu ] = useState('image');
+
   const states = {
     imageCheckbox, setImageCheckbox,
     sampleCheckbox, setSampleCheckbox,
@@ -28,7 +36,12 @@ export default function Home() {
     sampleCheckboxDisabled, setSampleCheckboxDisabled,
     labelledSampleCheckbox, setLabelledSampleCheckbox,
     cfDisplay, setCfDisplay,
-    cfData, setCfData 
+    cfData, setCfData,
+    selectedMenu, setSelectedMenu,
+    agriCheckbox, setAgriCheckbox,
+    selectedAgriCheckbox, setSelectedAgriCheckbox,
+    agriCheckboxDisabled, setAgriCheckboxDisabled,
+    selectedAgriCheckboxDisabled, setSelectedAgriCheckboxDisabled
   };
 
   return (

@@ -10,9 +10,11 @@ export let Point;
 export let Grid;
 export let Labelled;
 export let Agri;
+export let AgriPoint;
 
 export default async function initMap(map) {
 	await import('../../../node_modules/@geoman-io/leaflet-geoman-free');
+	await import('./tile.js');
 
 	// Assign map
 	Map = L.map(map, 
@@ -44,9 +46,11 @@ export default async function initMap(map) {
 	} }).addTo(Map);
 
 	// Agriculture sample
-	Agri = L.geoJSON([], { style: feature => {
-		return { color: feature.properties.agri ? 'orange' : 'blue' }
-	}}).addTo(Map);
+	Agri = L.tileLayer('').addTo(Map);
+
+	// Agriculture sleected
+	AgriPoint = L.geoJSON([], { pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'yellow' }) })
+		.addTo(Map);
 
 	// Grid for labelling
 	Grid = L.geoJSON([], { style: { fillOpacity: 0, color: 'cyan' } }).addTo(Map);

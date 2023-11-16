@@ -5,7 +5,7 @@ import loginServer from '../server/loginServer';
 export default function Login(props){
 	const { 
 		setAppState, setLoginPage, loginPage, username, setUsername,
-		setSampleSet, setProjectList
+		setSampleSet, setProjectList, setSampleAgriList
 	} = props;
 
 	const [ password, setPassword ] = useState(undefined);
@@ -45,7 +45,7 @@ export default function Login(props){
 						const body = { username, password };
 
 						// Run query from server components	
-						const { ok, samples, message, projects } = await loginServer(body);
+						const { ok, samples, message, projects, agri } = await loginServer(body);
 
 						// Check server condition
 						if (!(ok)){
@@ -64,6 +64,9 @@ export default function Login(props){
 
 								// Check the project list
 								setProjectList(projects);
+
+								// Set the agri sample list
+								setSampleAgriList(agri);
 							};
 						};
 
