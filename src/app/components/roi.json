@@ -260,7 +260,7 @@
 		]
 	},
 
-	"MainlandSEA": {
+	"Mainland_SEA": {
 		"geodesic": false,
 		"type": "Polygon",
 		"coordinates": [
