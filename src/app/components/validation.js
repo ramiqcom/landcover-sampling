@@ -4,7 +4,7 @@ import Select from 'react-select';
 import { toggleFeatures } from "./utilities";
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 import { createSample, loadSample, updateSample, updateSampleName, deleteSample } from '../server/sampleServer';
-import { Map, Features, Point } from "./map";
+import { Map, Features, Point, FeaturesValidation } from "./map";
 
 // Validation components
 export default function Validation(props){
@@ -16,7 +16,6 @@ export default function Validation(props){
 		setRegionYearDisabled,
 		sampleGenerationDisabled, setSampleGenerationDisabled,
 		sampleSelectionDisabled, setSampleSelectionDisabled,
-		setSampleCheckboxDisabled,
 		sampleSet, setSampleSet,
 		sampleFeatures, setSampleFeatures,
 		sampleId, setSampleId,
@@ -35,65 +34,8 @@ export default function Validation(props){
 	const lcOptions = lulcLabel.map((label, i) => new Object({ label: label, value: lulcValue[i] }));
 	const [ lcSelect, setLcSelect ] = useState(undefined);
 
-	// Function to call samples
-	async function callSamples(sampleId, callback) {
-		// Set loading to load sample
-		setMessage('Loading sample...');
-		setMessageColor('blue');
-
-		const { features, ok, message } = await loadSample({ sampleId });
-
-		if (!ok) {
-			setMessage(message);
-			setMessageColor('red');
-		} else {
-			// Clear features samples
-			Features.clearLayers()
-
-			// Add the features layer to Features
-			Features.addData(features);
-
-			// Set main samples
-			setSampleFeatures(features);
-
-			// Samples list
-			const sampleList = features.features.map(feat => new Object({ value: feat.properties.num, label: feat.properties.num }));
-			setSampleList(sampleList);
-			setSelectedSample(sampleList[0]);
-
-			// Set max and min sample
-			const sampleIdSort = features.features.map(feat => feat.properties.num).sort((x, y) => x - y);
-			setMinSample(sampleIdSort[0]);
-			setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
-
-			// Change selected points
-			changePointSample(features, 0, setSelectedSampleFeatures);
-			
-			// Activate button
-			callback();
-
-			// Set loading to null again
-			setMessage(undefined);
-		};
-	}
-
-	// Do something when selected sample set changed
-	useEffect(() => {
-		if (selectedSampleSet) {
-			setSampleName(selectedSampleSet.label);
-			setSampleId(selectedSampleSet.value);
-
-			// Disabled button until the operation is done
-			toggleFeatures(true, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
-
-			if (selectedSampleSet.value) {
-				// Calling the samples
-				callSamples(selectedSampleSet.value, () => toggleFeatures(false, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]));
-			} else {
-				toggleFeatures(true, [ setSampleSelectionDisabled, setSampleCheckboxDisabled ]);
-			};
-		}
-	}, [ selectedSampleSet ]);
+	// Sample link for download
+	const [ sampleLink, setSampleLink ] = useState(undefined);
 
 	// Do something and selected sample change
 	useEffect(() => {
@@ -119,8 +61,13 @@ export default function Validation(props){
 	// Change the Features if it changed
 	useEffect(() => {
 		if (Features) {
+			// Change the current sample in the map
 			Features.clearLayers();
 			Features.addData(sampleFeatures);
+
+			// Set features sample link
+			const link = `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(sampleFeatures))}`;
+			setSampleLink(link);
 		}
 	}, [ sampleFeatures ]);
 
@@ -136,52 +83,75 @@ export default function Validation(props){
 				<input style={{ flex: 1 }} min={1} max={100} disabled={sampleGenerationDisabled} type='number' value={sampleSize} onChange={e => setSampleSize(e.target.value) }/>
 
 				<button className='button-parameter' disabled={sampleGenerationDisabled} style={{ flex: 1 }}  onClick={async () => {
-					// Disable button
-					toggleFeatures(true, [
-						setSampleGenerationDisabled,
-						setSampleSelectionDisabled,
-						setRegionYearDisabled,
-					]);
+					try {
+						// Disable button
+						toggleFeatures(true, [
+							setSampleGenerationDisabled,
+							setSampleSelectionDisabled,
+							setRegionYearDisabled,
+						]);
 
-					// Set message
-					setMessage('Generating sample...');
-					setMessageColor('blue');
+						// Set message
+						setMessage('Generating sample...');
+						setMessageColor('blue');
 
-					// Time
-					const time = new Date().getTime();
-					
-					// Generate sample set id
-					const id = `${username}_${region.value}_${year.value}_${time}`;
+						// Time
+						const time = new Date().getTime();
+						
+						// Generate sample set id
+						const id = `${username}_${region.value}_${year.value}_${time}`;
 
-					// Generate sample
-					const result = await generateSample(year.value, region.value, id, username, time, { 
-						sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample 
-					});
+						// Generate sampel from earth engine
+						const { features, ok, message, tile } = await createSample({ year: year.value, region: region.value, sampleSize, sampleId: id, username, time });
 
-					// Check if the process is success
-					if (result) {
-						setMessage(result);
+						// Check if the process is success
+						if (!ok) {
+							setMessage(message);
+							setMessageColor('red');
+							throw new Error(message);
+						}
+
+						// Set the validation features sample point
+						FeaturesValidation.setUrl(tile);
+
+						// Set the new sample features
+						setSampleFeatures(features);
+
+						// Samples list
+						const sampleList = features.features.map((feat, index) => new Object({ value: index, label: index }));
+						setSampleList(sampleList);
+						setSelectedSample(sampleList[0]);
+
+						// Set max and min sample
+						const sampleIdSort = sampleList.map((feat, index) => index);
+						setMinSample(sampleIdSort[0]);
+						setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
+
+						// Selected
+						changePointSample(features, 0, setSelectedSampleFeatures);
+
+						// New sample option
+						const option = { value: id, label: id };
+
+						// Add the option to sample set selection
+						pushOption(sampleSet, setSampleSet, option, 'add');
+
+						// Select the option
+						setSelectedSampleSet(option);
+
+						// Delete message
+						setMessage(undefined);
+					} catch (error) {
+						setMessage(error.message);
 						setMessageColor('red');
+					} finally {
+						// Enable button again
+						toggleFeatures(false, [
+							setSampleGenerationDisabled,
+							setSampleSelectionDisabled,
+							setRegionYearDisabled,
+						]);
 					}
-
-					// New sample option
-					const option = { value: id, label: id };
-
-					// Add the option to sample set selection
-					pushOption(sampleSet, setSampleSet, option, 'add');
-
-					// Select the option
-					setSelectedSampleSet(option);
-
-					// Delete message
-					setMessage(undefined);
-
-					// Enable button again
-					toggleFeatures(false, [
-						setSampleGenerationDisabled,
-						setSampleSelectionDisabled,
-						setRegionYearDisabled,
-					]);
 				}}>Generate</button>
 			</div>
 
@@ -192,8 +162,62 @@ export default function Validation(props){
 				<Select 
 					options={sampleSet}
 					value={selectedSampleSet}
-					onChange={value => {
+					onChange={async value => {
+						// Set the sleected sample
 						setSelectedSampleSet(value);
+
+						// Try to load and change the sample
+						try {
+							// Set message
+							setMessage('Loading sample...');
+							setMessageColor('blue');
+
+							// Disabled button until the operation is done
+							toggleFeatures(true, [ setSampleSelectionDisabled ]);
+
+							// Set the sample name and id
+							setSampleName(value.label);
+							setSampleId(value.value);
+
+							// Load the sample from the server
+							const { features, ok, message, tile } = await loadSample({ sampleId: value.value });
+
+							// If the result is not okay throw error
+							if (!ok) {
+								setMessage(message);
+								setMessageColor('red');
+								throw new Error(message);
+							}
+
+							// Set the validation features sample point
+							FeaturesValidation.setUrl(tile);
+
+							// Set main samples
+							setSampleFeatures(features);
+
+							// Samples list
+							const sampleList = features.features.map((feat, index) => new Object({ value: index, label: index }));
+							setSampleList(sampleList);
+							setSelectedSample(sampleList[0]);
+
+							// Set max and min sample
+							const sampleIdSort = sampleList.map((feat, index) => index);
+							setMinSample(sampleIdSort[0]);
+							setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
+
+							// Change selected points
+							changePointSample(features, 0, setSelectedSampleFeatures);
+
+							// Set loading to null again
+							setMessage(undefined);
+						} catch (error) {
+							// Set message
+							setMessage(error.message);
+							setMessageColor('red');
+						} finally {
+							// Activate button again
+							toggleFeatures(false, [ setSampleSelectionDisabled ]);
+						}
 					}}
 					className='select-menu'
 					styles={ { flex: 3 } }
@@ -248,6 +272,9 @@ export default function Validation(props){
 					setMessageColor('green');
 				}}>&#xe161;</button>
 
+				<a className="flexible vertical" href={sampleLink} download={`${sampleId}.geojson`} disabled={sampleSelectionDisabled}>
+					<button style={{ flex: 1 }} className="button-parameter material-icons" disabled={sampleSelectionDisabled}>&#xe2c4;</button>
+				</a>
 			</div>
 
 			<div>
@@ -308,8 +335,8 @@ export default function Validation(props){
 					setLcSelect(value);
 					
 					// Current all features
-					const currentFeatures = sampleFeatures.features.map(feat => {
-						if (feat.properties.num === selectedSample.value) {
+					const currentFeatures = sampleFeatures.features.map((feat, index) => {
+						if (index === selectedSample.value) {
 							feat.properties.validation = value.value;
 							setSelectedSampleFeatures(feat);
 						};
@@ -333,55 +360,12 @@ export default function Validation(props){
 		
 					// Set the current sample features
 					setSampleFeatures(features);
-
-					// Add labelled sample
-					Features.clearLayers();
-					Features.addData(features);
 				}}
 				className='select-menu'
 				isDisabled={sampleSelectionDisabled}
 			/>
 		</div>	
 	)
-}
-
-/**
- * Function to generate sample
- * @param {Number} year 
- * @param {String} region 
- * @param {Number} sampleSize
- */
-async function generateSample(year, region, id, username, time, prop){
-	const { sampleSize, setSampleList, setSampleFeatures, setSelectedSampleFeatures, setSelectedSample, setMinSample, setMaxSample } = prop;
-
-	const body = { year, region, sampleSize, sampleId: id, username, time };
-
-	// Generate sampel from earth engine
-	const { features, ok, message } = await createSample(body);
-	if (ok) {
-		setSampleFeatures(features);
-	} else {
-		return message;
-	};
-	
-	// Remove all features
-	Features.clearLayers();
-
-	// Add the features to map
-	Features.addData(features);
-
-	// Samples list
-	const sampleList = features.features.map(feat => new Object({ value: feat.properties.num, label: feat.properties.num }));
-	setSampleList(sampleList);
-	setSelectedSample(sampleList[0]);
-
-	// Set max and min sample
-	const sampleIdSort = features.features.map(feat => feat.properties.num).sort((x, y) => x - y);
-	setMinSample(sampleIdSort[0]);
-	setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
-
-	// Selected
-	changePointSample(features, 0, setSelectedSampleFeatures);
 }
 
 /**
@@ -392,8 +376,9 @@ async function generateSample(year, region, id, username, time, prop){
  */
 function changePointSample(features, value, setSelectedSampleFeatures){
 	// Selected
-	const selected = features.features.filter(feat => feat.properties.num === value)[0];
+	const selected = features.features.filter((feat, index) => index === value)[0];
 	setSelectedSampleFeatures(selected);
+
 	Point.clearLayers() // Clear all layers inside the selected one
 	Point.addData(selected);
 

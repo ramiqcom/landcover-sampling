@@ -3,6 +3,7 @@ import { lulcValuePalette } from './lulc';
 
 // Load map function
 export let Map;
+export let FeaturesValidation;
 export let Features;
 export let Basemap;
 export let Tile;
@@ -28,32 +29,32 @@ export default async function initMap(map) {
 		.addTo(Map);
 
 	Tile = L.tileLayer("").addTo(Map);
+	
+	FeaturesValidation = L.tileLayer('').addTo(Map);
 
-	Features = L.geoJSON([], { pointToLayer: (feat, coord) => {
+	Features = L.geoJSON([], { style: { fillOpacity: 0 }, pointToLayer: (feat, coord) => {
 		if (feat.properties.validation) {
-			return L.circleMarker(coord, { radius: 5, color: 'green' })
-		} else {
-			return L.circleMarker(coord, { radius: 5 })
+			return L.circleMarker(coord, { radius: 5, color: 'green' });
 		};
 	}}).addTo(Map);
 
-	Point = L.geoJSON([], { pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'yellow' }) })
+	Point = L.geoJSON([], { style: { fillOpacity: 0 }, pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'yellow' }) })
 		.addTo(Map);
 
 	// Labelled sample
 	Labelled = L.geoJSON([], { style: feature => {
-		return { color: lulcValuePalette[feature.properties.classvalue] };
+		return { color: lulcValuePalette[feature.properties.classvalue], fillOpacity: 0 };
 	} }).addTo(Map);
 
 	// Agriculture sample
 	Agri = L.tileLayer('').addTo(Map);
 
 	// Agriculture sleected
-	AgriPoint = L.geoJSON([], { pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'yellow' }) })
+	AgriPoint = L.geoJSON([], { style: { fillOpacity: 0 }, pointToLayer: (feat, coord) => L.circleMarker(coord, { radius: 5, color: 'yellow' }) })
 		.addTo(Map);
 
 	// Grid for labelling
-	Grid = L.geoJSON([], { style: { fillOpacity: 0, color: 'cyan' } }).addTo(Map);
+	Grid = L.geoJSON([], { style: { color: 'cyan', fillOpacity: 0 } }).addTo(Map);
 
 	// Add drawing control
 	Map.pm.addControls({

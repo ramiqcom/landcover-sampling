@@ -9,7 +9,8 @@ import { toggleFeatures } from "./utilities";
 export default function Labelling(props){
 	const { 
 		labellingDisplay, region, year, username, selectedMenu, setMessage, setMessageColor,
-		sampleAgriList, setSampleAgriList 
+		sampleAgriList, setSampleAgriList,
+		agriFeatures, setAgriFeatures
 	} = props;
 
 	// Labelling option
@@ -63,9 +64,6 @@ export default function Labelling(props){
 	// Disabled select sample agri
 	const [ sampleAgriDisabled, setSampleAgriDisabled ] = useState(true);
 
-	// Agri features
-	const [ agriFeatures, setAgriFeatures ] = useState(true);
-
 	// Agri min and max sample
 	const [ agriMin, setAgriMin ] = useState(undefined);
 	const [ agriMax, setAgriMax ] = useState(undefined);
@@ -91,10 +89,10 @@ export default function Labelling(props){
 
 			// Pause the button
 			toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
-			const { features, tile, ok } = await loadAgri({ sampleId });
+			const { features, tile, ok, message } = await loadAgri({ sampleId });
 
 			if (!ok) {
-				setMessage(err.message);
+				setMessage(message);
 				setMessageColor('red');
 				return null;
 			};
@@ -129,15 +127,17 @@ export default function Labelling(props){
 		}
 	}, [ box ]);
 
-	// Use effect when the labelling option change
-	useEffect(() => {
-		if (Grid && labellingDisplay == 'flex') {
-			switch (labelOption.value) {
-				case 'lc':
-					setLcDisplay('flex');
+	// Show drawing widget if the mode is labelling and land cover
+	useEffect(() => {		
+		if (Grid && labelOption) {
+			if (selectedMenu === 'labelling') {
+				if (labelOption.value === 'lc'){
+					Map.pm.controlsVisible() ? null : Map.pm.toggleControls();
+					
 					setAgriDisplay('none');
+					setLcDisplay('flex');
 					Grid.setStyle({ opacity: 1, fillOpacity: 0 });
-
+	
 					Grid.clearLayers();
 					// Create grid
 					const bounds = roi[region.value];
@@ -160,28 +160,21 @@ export default function Labelling(props){
 						setBox({ value: 0, label: 0 });
 						Map.fitBounds(L.geoJSON(grid.features[0]).getBounds(), { maxZoom: 10 });
 					};
-					break;
-				case 'agri':
-					setLcDisplay('none');
-					setAgriDisplay('flex');
-					Grid.setStyle({ opacity: 0, fillOpacity: 0 });
-					break;
-				default:
-					setLcDisplay('none');
-					setAgriDisplay('none');
-					Grid.setStyle({ opacity: 0, fillOpacity: 0 });
-			}
-		}
-	}, [ labelOption ]);
+				}
 
-	// Show drawing widget if the mode is labelling and land cover
-	useEffect(() => {
-		if (labelOption) {
-			if (selectedMenu == 'labelling' && labelOption.value == 'lc') {
-				Map.pm.controlsVisible() ? null : Map.pm.toggleControls();
+				if (labelOption.value === 'agri') {
+					setAgriDisplay('flex');
+					setLcDisplay('none');
+					Grid.setStyle({ opacity: 0, fillOpacity: 0 });
+					Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
+				}
+	
 			} else {
-				Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;
-			};
+				setLcDisplay('none');
+				setAgriDisplay('none');
+				Grid.setStyle({ opacity: 0, fillOpacity: 0 });
+				Map.pm.controlsVisible() ? Map.pm.toggleControls() : null;		
+			}	
 		}
 	}, [ labelOption, selectedMenu ]);
 

@@ -6,6 +6,7 @@ import ee from '@google/earthengine';
 import { auth, init, mapid } from './eePromise';
 import pify from 'pify';
 import { storage, bigquery } from './dataClient';
+import { compositeImage } from './tileServer';
 
 // Key
 const key = JSON.parse(process.env.KEY);
@@ -27,7 +28,7 @@ export async function createSample(body){
 	await init(null, null);
 
 	const { region, year, sampleSize, sampleId, username, time } = body;
-	const id = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.LULC_COLLECTION}/LULC_${region}_${year}_v1`;
+	const id = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.LULC_COLLECTION}/${region}_${year}`;
 
 	// Load image
 	const image = ee.Image(id);
@@ -38,15 +39,25 @@ export async function createSample(body){
 		scale: 30,
 		region: image.geometry(),
 		geometries: true
-	}).map(feat =>  feat.set('num', ee.Number.parse(feat.get('system:index')), 'validation', 0));
+	}).randomColumn().sort('random')
+		.map(feat =>  feat.set('validation', 0));
 
 	// Features
 	const evaluateFeatures = pify(sample.evaluate, { multiArgs: true, errorFirst: false }).bind(sample);
 	const [ features, errorMessage ] = await evaluateFeatures();
 
-	// Return evaluated features
+	// If cannot be evaluated send error data
 	if (errorMessage) {
 		return { message: errorMessage, ok: false };
+	};
+
+	// Visualized features
+	const featuresVisual = sample.style({ color: 'DodgerBlue', pointSize: 5, fillColor: '00000000' });
+	const [ obj, error ] = await mapid({ image: featuresVisual });
+
+	// If cannot be visualized send error data
+	if (error) {
+		return { message: error, ok: false };
 	};
 
 	// Save the file to cloud storage
@@ -63,7 +74,7 @@ export async function createSample(body){
 	const valuesTable = `VALUES ('${sampleId}', '${sampleId}', '${username}', ${time}, ${time})`;
 	await bigquery.query(`INSERT INTO ${sampleTable} ${valuesTable}`);
 
-	return { features, ok: true };
+	return { features, ok: true, tile: obj.urlFormat };
 }
 
 /**
@@ -72,6 +83,10 @@ export async function createSample(body){
  * @returns {Promise.<{ features: GeoJSON | undefined, ok: boolean, message: string | undefined }>}
  */
 export async function loadSample(body){
+	// Auth and init process earth engine
+	await auth(key);
+	await init(null, null);
+
 	// get sample id
 	const { sampleId } = body;
 
@@ -79,7 +94,16 @@ export async function loadSample(body){
 	try {
 		const file = await storage.bucket(process.env.BUCKET).file(`sample/${sampleId}.geojson`).download();
 		const geojson = JSON.parse(file[0].toString());
-		return { features: geojson, ok: true };
+
+		// Load tile url from features
+		const visualized = ee.FeatureCollection(geojson).style({ color: 'DodgerBlue', pointSize: 5, fillColor: '00000000' });
+		const [ obj, error ] = await mapid({ image: visualized });
+
+		if (error) {
+			return { ok: false, message: error.message }
+		}
+
+		return { features: geojson, ok: true, tile: obj.urlFormat };
 	} catch (error) {
 		return { ok: false, message: error.message }	
 	}
@@ -131,13 +155,11 @@ export async function agriSample(body){
 	await auth(key);
 	await init(null, null);
 
+	// Parameter
 	const { sampleId, region, year, type, username, time } = body;
 
-	// Image collection
-	const collection = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`;
-
-	// Get the image
-	const image = ee.Image(`${collection}/${region}_${year}`);
+	// Composite image
+	const image = await compositeImage(region, year);
 
 	// NBR
 	const nbr = image.expression('NBR = (NIR - SWIR2) / (NIR + SWIR2)', {
@@ -191,7 +213,7 @@ export async function agriSample(body){
 	await bigquery.query(`INSERT INTO ${labelTable} ${valuesTable}`);
 
 	// Feature tile
-	const [ obj, err ] = await mapid({ image: sample.draw('blue', 5) });
+	const [ obj, err ] = await mapid({ image: sample.style({ color: 'DodgerBlue', pointSize: 5, fillColor: '00000000' }) });
 
 	// Return evaluated features
 	if (err) {
@@ -234,7 +256,7 @@ export async function loadAgri(body){
 		await init(null, null);
 
 		// Load feature as tile
-		const [ obj, error ] = await mapid({ image: ee.FeatureCollection(geojson).draw('blue', 5) });
+		const [ obj, error ] = await mapid({ image: ee.FeatureCollection(geojson).style({ color: 'DodgerBlue', pointSize: 5, fillColor: '00000000' }) });
 
 		if (error) {
 			return { ok: false, message: error };

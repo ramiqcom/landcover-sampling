@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Basemap as base, Tile, Features, Point, Agri, Labelled, AgriPoint } from './map';
+import { Basemap as base, Tile, FeaturesValidation, Features, Point, Agri, Labelled, AgriPoint, Grid } from './map';
 
 export default function Layers(prop){
 	return (
@@ -74,7 +74,9 @@ function LayerCheckbox(prop) {
 		agriCheckbox, setAgriCheckbox,
     selectedAgriCheckbox, setSelectedAgriCheckbox,
 		agriCheckboxDisabled, setAgriCheckboxDisabled,
-    selectedAgriCheckboxDisabled, setSelectedAgriCheckboxDisabled
+		setSampleCheckboxDisabled,
+		agriFeatures,
+		sampleFeatures
 	} = prop;
 
 
@@ -94,15 +96,16 @@ function LayerCheckbox(prop) {
 
 	// Useeffect when selected menu change
 	useEffect(() => {
+		setLayerValidationDisplay('none');
+		setLayerLabelDisplay('none');
+		
 		switch (selectedMenu) {
 			case 'validation':
 			case 'assessment':
 				setLayerValidationDisplay('flex');
-				setLayerLabelDisplay('none');
 				break;
 			case 'labelling':
 				setLayerLabelDisplay('flex');
-				setLayerValidationDisplay('none');
 				break;
 			default:
 				setLayerValidationDisplay('none');
@@ -113,19 +116,21 @@ function LayerCheckbox(prop) {
 
 	// Allow to show and hide the agriculture checkbox
 	useEffect(() => {
-		if (Agri) {
-			setAgriCheckboxDisabled(false)
+		if (agriFeatures) {
+			setAgriCheckboxDisabled(false);
 		} else {
 			setAgriCheckboxDisabled(true);
 		};
+	}, [ agriFeatures ]);
 
-		if (AgriPoint) {
-			setSelectedAgriCheckboxDisabled(false)
+	// Allow to show and hide validation sample checkbox
+	useEffect(() => {{
+		if (sampleFeatures) {
+			setSampleCheckboxDisabled(false)
 		} else {
-			setSelectedAgriCheckboxDisabled(true);
-		};
-
-	}, [ Agri, AgriPoint ]);
+			setSampleCheckboxDisabled(true);
+		}
+	}}, [ sampleFeatures ]);
 
 	return (
 		<div className='flexible vertical space'>
@@ -139,7 +144,7 @@ function LayerCheckbox(prop) {
 
 					<input type='checkbox' checked={selectedSampleCheckbox} disabled={sampleCheckboxDisabled} onChange={e => {
 						setSelectedSampleCheckbox(e.target.checked);
-						e.target.checked ? Point.setStyle({ opacity: 1, fillOpacity: 0.3 }) : Point.setStyle({ opacity: 0, fillOpacity: 0 });
+						Point.setStyle({ opacity: e.target.checked ? 1 : 0 });
 					}}/> 
 
 					<div style={{ border: '3px solid gold', borderRadius: '100%', height: '10px', width: '10px' }}></div>
@@ -150,7 +155,7 @@ function LayerCheckbox(prop) {
 
 					<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacitySelected} disabled={sampleCheckboxDisabled} onChange={e => {
 						setOpacitySelected(e.target.value);
-						Point.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
+						Point.setStyle({ opacity: e.target.value });
 					}}/>
 				</div>
 
@@ -158,8 +163,7 @@ function LayerCheckbox(prop) {
 
 					<input type='checkbox' checked={labelledSampleCheckbox} disabled={sampleCheckboxDisabled} onChange={e => {
 						setLabelledSampleCheckbox(e.target.checked);
-						const style = e.target.checked ? { opacity: 1, fillOpacity: 0.3 } : { opacity: 0, fillOpacity: 0 };
-						Features.eachLayer(layer => layer.feature.properties.validation ? layer.setStyle(style) : null);
+						Features.eachLayer(layer => layer.setStyle({ opacity: e.target.checked ? 1 : 0}));
 					}}/>
 
 					<div style={{ border: '3px solid green', borderRadius: '100%', height: '10px', width: '10px' }}></div>
@@ -170,8 +174,8 @@ function LayerCheckbox(prop) {
 
 					<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacityLabelSample} disabled={sampleCheckboxDisabled} onChange={e => {
 						setOpacityLabelSample(e.target.value);
-						const style = { opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 };
-						Features.eachLayer(layer => layer.feature.properties.validation ? layer.setStyle(style) : null);
+						const style = { opacity: e.target.value };
+						Features.eachLayer(layer => layer.setStyle(style));
 					}}/>
 				</div>
 					
@@ -179,7 +183,7 @@ function LayerCheckbox(prop) {
 
 					<input type='checkbox' checked={sampleCheckbox} disabled={sampleCheckboxDisabled} onChange={e => {
 						setSampleCheckbox(e.target.checked);
-						e.target.checked ? Features.setStyle({ opacity: 1, fillOpacity: 0.3 }) : Features.setStyle({ opacity: 0, fillOpacity: 0 });
+						FeaturesValidation.setOpacity(e.target.checked ? 1 : 0);
 					}}/>
 
 					<div style={{ border: '3px solid blue', borderRadius: '100%', height: '10px', width: '10px' }}></div>
@@ -190,7 +194,7 @@ function LayerCheckbox(prop) {
 
 					<input style={{ flex: 1 }} type='range' min={0} max={1} step={0.01} value={opacitySample} disabled={sampleCheckboxDisabled} onChange={e => {
 						setOpacitySample(e.target.value);
-						Features.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
+						FeaturesValidation.setOpacity(e.target.value);
 					}}/>
 				</div>
 			</div>
@@ -211,9 +215,9 @@ function LayerCheckbox(prop) {
 				</div>
 
 				<div className='flexible start center1' style={{ gap: '0.5vh' }}>
-					<input type='checkbox' disabled={selectedAgriCheckboxDisabled} checked={selectedAgriCheckbox} onChange={e => {
+					<input type='checkbox' disabled={agriCheckboxDisabled} checked={selectedAgriCheckbox} onChange={e => {
 						setSelectedAgriCheckbox(e.target.checked)
-						e.target.checked ? AgriPoint.setStyle({ opacity: 1, fillOpacity: 0.3 }) : AgriPoint.setStyle({ opacity: 0, fillOpacity: 0 });
+						AgriPoint.setStyle({ opacity: e.target.checked ? 1 : 0 });
 					}}/> 
 
 					<div style={{ border: '3px solid gold', borderRadius: '100%', height: '10px', width: '10px' }}></div>
@@ -224,14 +228,14 @@ function LayerCheckbox(prop) {
 
 					<input style={{ flex: 1 }} type='range' min={0} max={1} value={selectedOpacityAgri} onChange={e => {
 						setSelectedOpacityAgri(e.target.value);
-						AgriPoint.setStyle({ opacity: e.target.value, fillOpacity: e.target.value - 0.7 < 0 ? 0 : e.target.value - 0.7 });
+						AgriPoint.setStyle({ opacity: e.target.value });
 					}} step={0.01} />
 				</div>
 
 				<div className='flexible start center1' style={{ gap: '0.5vh' }}>
 					<input type='checkbox' disabled={agriCheckboxDisabled} checked={agriCheckbox} onChange={e => {
 						setAgriCheckbox(e.target.checked)
-						e.target.checked ? Agri.setOpacity(1) : Agri.setOpacity(0);
+						Agri.setOpacity(e.target.checked ? 1 : 0);
 					}} /> 
 
 					<div style={{ border: '3px solid blue', borderRadius: '100%', height: '10px', width: '10px' }}></div>
@@ -255,7 +259,7 @@ function LayerCheckbox(prop) {
 				<div className='flexible start center1' style={{ gap: '0.5vh' }}> 
 					<input type='checkbox' checked={imageCheckbox} disabled={imageCheckboxDisabled} onChange={e => {
 						setImageCheckbox(e.target.checked);
-						e.target.checked ? Tile.setOpacity(1) : Tile.setOpacity(0); // Change opacity of the object
+						Tile.setOpacity(e.target.checked ? 1 : 0); // Change opacity of the object
 					}}/> 
 
 					<div style={{ flex: 2 }}>

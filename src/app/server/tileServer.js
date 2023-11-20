@@ -4,16 +4,16 @@
 import 'node-self';
 import ee from '@google/earthengine';
 import { auth, init, mapid } from './eePromise';
+import regions from '../components/roi.json' assert { type: 'json' };
 
-// Main function
-export default async function main(body){
-	// Key
-	const key = JSON.parse(process.env.KEY);
+// Key
+const key = JSON.parse(process.env.KEY);
 
-	// Run
-	await auth(key);
-	await init(null, null);
-	return await tile(body);
+// Region names
+const regionNames = Object.keys(regions);
+const regionValues = {};
+for (let i = 0; i <= regionNames.length - 1; i++){
+	regionValues[regionNames[i]] = i + 1
 }
 
 /**
@@ -21,15 +21,16 @@ export default async function main(body){
  * @param {{ Region: String, Year: Number, Bands: [ String, String, String ] }} body 
  * @returns {Promise<{ url: URL, geojson: GeoJSON } | { message: String }>}
  */
-async function tile(body){
+export async function tile(body){
+	// Run
+	await auth(key);
+	await init(null, null);
+
 	// Payload
 	const { region, year, bands } = body;
 
-	// Data prefix
-	const collection = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`;
-
 	// Get the new image
-	const image = ee.Image(`${collection}/${region}_${year}`);
+	const image = await compositeImage(region, year);
 
 	// Visualized image
 	const visualized = visual(image, bands);
@@ -46,6 +47,25 @@ async function tile(body){
 }
 
 /**
+ * Function to composite an image based on region and year
+ * @param {string} region
+ * @param {number} year
+ * @returns {ee.Image}
+ */
+export async function compositeImage(region, year) {
+	// Image collection
+	const collection = ee.ImageCollection(`projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`);
+
+	// Region mask
+	const regionMask = ee.Image(`projects/${process.env.IMAGE_PROJECT}/assets/${process.env.REGION_MASK}`).eq(regionValues[region]);
+
+	// Image
+	const image = collection.filter(ee.Filter.eq('year', year)).mosaic().updateMask(regionMask);
+
+	return image;
+}
+
+/**
  * Image stretch visualization
  * @param {ee.Image} image 
  * @param {[ String, String, String ]} bands 
@@ -55,7 +75,7 @@ function visual(image, bands){
   // Percentile
   const percent = image.select(bands).reduceRegion({
     geometry: image.geometry(),
-    scale: 300,
+    scale: 1000,
     maxPixels: 1e13,
     reducer: ee.Reducer.percentile([1, 99])
   });

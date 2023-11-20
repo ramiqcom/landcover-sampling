@@ -7,7 +7,7 @@ import Labelling from './labelling';
 import Assessment from './assessment';
 import { toggleFeatures } from './utilities';
 import { Map, Tile } from './map';
-import tile from '../server/tileServer';
+import { tile } from '../server/tileServer';
 import dataRegion from './roi.json' assert { type: 'json' }
 import { saveProject, loadProject, deleteProject } from '../server/projectServer';
 
@@ -75,7 +75,8 @@ function Project(props){
 		sampleSet, 
 		setSelectedSample,
 		setProjectList,
-		setSelectedMenu
+		setSelectedMenu,
+		sampleFeatures, setSampleFeatures
 	} = props;
 
 	// Save project
@@ -143,9 +144,6 @@ function Project(props){
 	// Sample parameter disabled button
 	const [ sampleGenerationDisabled, setSampleGenerationDisabled ] = useState(false);
 	const [ sampleSelectionDisabled, setSampleSelectionDisabled ] = useState(true);
-
-	// Sample features
-	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 
 	// Selected sample set
 	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
@@ -523,70 +521,63 @@ function Selection(props){
 			</div>
 
 			<button className='button-parameter' disabled={parameterDisabled} onClick={async () => {
-				// Enable button again
-				toggleFeatures(true, [
-					setRegionYearDisabled,
-					setParameterDisabled
-				]);
+				try {
+					// Enable button again
+					toggleFeatures(true, [
+						setRegionYearDisabled,
+						setParameterDisabled
+					]);
 
-				// Load image to map
-				await loadImage(year.value, region.value, [ red.value, green.value, blue.value ], setImageUrl, setImageGeoJson, setMessage, setMessageColor);
+					// Image load message
+					setMessage('Preparing image...');
+					setMessageColor('blue');
 
-				// Enable button again
-				toggleFeatures(false, [
-					setRegionYearDisabled,
-					setParameterDisabled
-				]);
+					// Parameter to fetch image
+					const body = {
+						year: year.value,
+						region: region.value,
+						bands: [ red.value, green.value, blue.value ]
+					};
+
+					// Load tile and geojson with server action
+					const { url, ok, message } = await tile(body);
+
+					// If the process error tile if it is error
+					if (!ok) {
+						setMessage(message);
+						setMessageColor('red');
+						throw new Error(message);
+					}
+									
+					// Set image url
+					setImageUrl(url);
+
+					// Set the geojson
+					const geojson = dataRegion[region.value];
+					setImageGeoJson(geojson);
+
+					// Add tile to map
+					Tile.setUrl(url);
+					
+					// Zoom to tile
+					const bounds = L.geoJSON(geojson).getBounds();
+					Map.fitBounds(bounds, { maxZoom: 14 });
+
+					// Hide message
+					setMessage(undefined);
+				} catch (error) {
+					// Show error if it is actually broken
+					setMessage(error.message);
+					setMessageColor('red')
+				} finally {
+					// Enable button again
+					toggleFeatures(false, [
+						setRegionYearDisabled,
+						setParameterDisabled
+					]);
+				}				
 			}}>Show image</button>
 			
 		</div>
 	)
-}
-
-/**
- * Function load image
- * @param {{ value: Number, label: Number }} year 
- * @param {{ value: String, label: String }} region 
- * @param {{ value: String, label: String }} red 
- * @param {{ value: String, label: String }} green 
- * @param {{ value: String, label: String }} blue 
- */
-async function loadImage(year, region, [ red, green, blue ], setImageUrl, setImageGeoJson, setMessage, setMessageColor) {
-	// Image load message
-	setMessage('Preparing image...');
-	setMessageColor('blue');
-
-	// Parameter to fetch image
-	const body = {
-		year: year,
-		region: region,
-		bands: [ red, green, blue ]
-	};
-
-	// Load tile and geojson with server action
-	const { url, ok, message } = await tile(body);
-					
-	// Condiitonal if the function is success
-	if (ok){
-		// Set image url
-		setImageUrl(url);
-
-		// Set the geojson
-		const geojson = dataRegion[region];
-		setImageGeoJson(geojson);
-
-		// Add tile to map
-		Tile.setUrl(url);
-		
-		// Zoom to tile
-		const bounds = L.geoJSON(geojson).getBounds();
-		Map.fitBounds(bounds, { maxZoom: 14 });
-
-		// Hide message
-		setMessage(undefined);
-	} else {
-		// Show error message
-		setMessage(message);
-		setMessageColor('red');
-	};
 }

@@ -19,14 +19,18 @@ export default function Home() {
   const [ labelledSampleCheckbox, setLabelledSampleCheckbox ] = useState(true);
   const [ cfDisplay, setCfDisplay ] = useState('none');
   const [ cfData, setCfData ] = useState([]);
-
   const [ agriCheckbox, setAgriCheckbox ] = useState(true);
   const [ selectedAgriCheckbox, setSelectedAgriCheckbox ] = useState(true);
   const [ agriCheckboxDisabled, setAgriCheckboxDisabled ] = useState(true);
-  const [ selectedAgriCheckboxDisabled, setSelectedAgriCheckboxDisabled ] = useState(true);
 
-  	// Selected option
+  // Selected option
 	const [ selectedMenu, setSelectedMenu ] = useState('image');
+
+  // Agri features
+	const [ agriFeatures, setAgriFeatures ] = useState(true);
+
+  // Sample features for validation
+	const [ sampleFeatures, setSampleFeatures ] = useState(undefined);
 
   const states = {
     imageCheckbox, setImageCheckbox,
@@ -41,7 +45,8 @@ export default function Home() {
     agriCheckbox, setAgriCheckbox,
     selectedAgriCheckbox, setSelectedAgriCheckbox,
     agriCheckboxDisabled, setAgriCheckboxDisabled,
-    selectedAgriCheckboxDisabled, setSelectedAgriCheckboxDisabled
+    agriFeatures, setAgriFeatures,
+    sampleFeatures, setSampleFeatures
   };
 
   return (
@@ -70,9 +75,9 @@ export default function Home() {
 // Confusion matrix
 function ConfusionMatrix(prop) {
   const { cfDisplay, cfData } = prop;
-  const columns = Array.from(lulcValueString);
-  columns.unshift('');
-  columns.push('%')
+  const columns = Array.from(lulcValueString).map(feat => new Object({ label: feat, id: feat }));
+  columns.unshift({ label: '', id: 'acc' });
+  columns.push({ label: '%', id: 'acc' });
   return (
     <div style={{ display: cfDisplay }} id='cf-div'>
       <Grid
