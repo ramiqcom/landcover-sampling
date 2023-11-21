@@ -83,5 +83,20 @@
 		"label": "Pond",
 		"value": 111,
 		"palette": "lavender"
+	},
+	"none": {
+		"label": "No data",
+		"value": 253,
+		"palette": "gray"
+	},
+	"cloud": {
+		"label": "Cloud",
+		"value": 254,
+		"palette": "white"
+	},
+	"shadow": {
+		"label": "Shadow",
+		"value": 255,
+		"palette": "black"
 	}
 }
