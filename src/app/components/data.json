@@ -78,5 +78,10 @@
 		"label": "Water",
 		"value": 110,
 		"palette": "lightskyblue"
+	},
+	"pond": {
+		"label": "Pond",
+		"value": 111,
+		"palette": "lavender"
 	}
 }
