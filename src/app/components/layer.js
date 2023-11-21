@@ -99,10 +99,13 @@ function LayerCheckbox(prop) {
 		setLayerValidationDisplay('none');
 		setLayerLabelDisplay('none');
 		
-		AgriPoint.setStyle({ opacity: 0 });
-		Agri.setOpacity(0);
-		Point.setStyle({ opacity: 0 });
-		FeaturesValidation.setOpacity(0);
+		if (Agri && AgriPoint && FeaturesValidation && Point && Features) {
+			AgriPoint.setStyle({ opacity: 0 });
+			Agri.setOpacity(0);
+			Point.setStyle({ opacity: 0 });
+			Features.setStyle({ opacity: 0 });
+			FeaturesValidation.setOpacity(0);
+		}
 
 		switch (selectedMenu) {
 			case 'validation':
@@ -110,6 +113,7 @@ function LayerCheckbox(prop) {
 				setLayerValidationDisplay('flex');
 				Point.setStyle({ opacity: 1 });
 				FeaturesValidation.setOpacity(1);
+				Features.setStyle({ opacity: 1 });
 				break;
 			case 'labelling':
 				setLayerLabelDisplay('flex');
