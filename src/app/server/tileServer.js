@@ -58,14 +58,24 @@ export async function tile(body){
  * @returns {ee.Image}
  */
 export async function compositeImage(region, year) {
-	// Image collection
-	const collection = ee.ImageCollection(`projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`);
-
 	// Region mask
 	const regionMask = ee.Image(`projects/${process.env.IMAGE_PROJECT}/assets/${process.env.REGION_MASK}`).eq(regionValues[region]);
 
-	// Image
-	const image = collection.filter(ee.Filter.eq('year', year)).mosaic().updateMask(regionMask);
+	// Aoi
+	const aoi = ee.FeatureCollection('projects/ee-ramadhan/assets/AOIRegionSea_v1').filter(ee.Filter.eq('name', region)).geometry().bounds();
+
+	let image;
+
+	if (year > 2012) {
+		// Image collection
+		const collection = ee.ImageCollection(`projects/${process.env.IMAGE_PROJECT}/assets/${process.env.IMAGE_COLLECTION}`);
+		// Image
+		image = collection.filter(ee.Filter.eq('year', year)).mosaic().updateMask(regionMask);
+	} else {
+		image = ee.Image('UMD/hansen/global_forest_change_2013')
+			.select(['last_b30', 'last_b40', 'last_b50', 'last_b70'], ['B4', 'B5', 'B6', 'B7'])
+			.updateMask(regionMask);
+	}
 
 	return image;
 }

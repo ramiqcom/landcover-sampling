@@ -28,50 +28,49 @@ export default function Login(props){
 
 			<div id='login-button'>
 				<button disabled={disabled} onClick={async (e) => {
-					// Disabled input for a while
-					setDisabled(true);
+					try {
+						if(!(username && password)) {
+							throw new Error('Username or password is empty');
+						}
 
-					// Set message loading
-					setMessage('Logging in...');
-					setMessageColor('blue');
-					
-					// Check username and password
-					if (!(username && password)) {
-						// Set message to account not found
-						setMessage('Username or password is empty');
-						setMessageColor('red');
-					} else {
+						// Disabled input for a while
+						setDisabled(true);
+
+						// Set message loading
+						setMessage('Logging in...');
+						setMessageColor('blue');
+
 						// Body
 						const body = { username, password };
 
 						// Run query from server components	
 						const { ok, samples, message, projects, agri } = await loginServer(body);
 
-						// Check server condition
-						if (!(ok)){
-								// Run if the account is not found
-								setMessage(message);
-								setMessageColor('red');
-								setLoginPage('flex');
-								setAppState('none');
-							} else {
-								// Run if the server condition are okay
-								setLoginPage('none');
-								setAppState('flex');
+						// Show error if not ok
+						if (!ok) {
+							throw new Error(message);
+						}
 
-								// Check the sample list
-								setSampleSet(samples);
+						// Check the sample list
+						setSampleSet(samples);
 
-								// Check the project list
-								setProjectList(projects);
+						// Check the project list
+						setProjectList(projects);
 
-								// Set the agri sample list
-								setSampleAgriList(agri);
-							};
-						};
+						// Set the agri sample list
+						setSampleAgriList(agri);
 
-					// Set input to enable again
-					setDisabled(false);
+						// Run if the server condition are okay
+						setLoginPage('none');
+						setAppState('flex');			
+					} catch (error) {
+						setMessage(error.message);
+						setMessageColor('red');
+						setLoginPage('flex');
+						setAppState('none');
+					} finally {
+						setDisabled(false);	
+					}
 				}}>Login</button>
 			</div>
 
