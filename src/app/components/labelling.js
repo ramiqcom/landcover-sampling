@@ -80,44 +80,6 @@ export default function Labelling(props){
 	// Agri sample download link
 	const [ agriLink, setAgriLink ] = useState(undefined);
 
-	// Function to load sample from cloud
-	async function loadSampleAgri({ sampleId }) {
-		try {
-			// Show sample loading message
-			setMessage('Loading sample...');
-			setMessageColor('blue');
-
-			// Pause the button
-			toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
-			const { features, tile, ok, message } = await loadAgri({ sampleId });
-
-			if (!ok) {
-				setMessage(message);
-				setMessageColor('red');
-				return null;
-			};
-
-			// Set Agri parameter
-			Agri.setUrl(tile);
-			setAgriFeatures(features);
-			setAgriMax(features.features.length);
-			setAgriMin(0);
-			setSelectedSampleAgri({ value: 0, label: 0 });
-			setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));
-
-			// Hide message
-			setMessage(undefined);
-			setMessageColor('blue');
-		} catch (err) {
-			setMessage(err.message);
-			setMessageColor('red');
-			return null;
-		} finally {
-			// Enable some button
-			toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
-		}		
-	};
-
 	// When the box choice is changed, zoom to the location
 	useEffect(() => {
 		if (box) {
@@ -181,10 +143,8 @@ export default function Labelling(props){
 	// Useeffect to enable agri sample mode
 	useEffect(() => {
 		if (sampleAgriSet) {
-			setSampleAgriDisabled(false);
-		} else {
-			setSampleAgriDisabled(true);
-		};
+			setAgriSampleId(sampleAgriSet.value);
+		}
 	}, [ sampleAgriSet ]);
 
 	// Useffect when the selected agri sample changed
@@ -262,33 +222,42 @@ export default function Labelling(props){
 
 			<div className="flexible space vertical" style={{ display: agriDisplay }}>
 				<button className="button-parameter" disabled={labellingDisabled} onClick={async () => {
-					// Set loading
-					setMessage('Generating sample...');
-					setMessageColor('blue');
+					try {
+						// Set loading
+						setMessage('Generating sample...');
+						setMessageColor('blue');
 
-					// Disable some button
-					toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
+						// Disable some button
+						toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
 
-					const time = new Date().getTime();
-					const sampleId = `${username}_${labelOption.value}_${region.value}_${year.value}_${time}`;
+						const time = new Date().getTime();
+						const sampleId = `${username}_${labelOption.value}_${region.value}_${year.value}_${time}`;
 
-					const { features, ok, message, tile } = await agriSample({
-						region: region.value,
-						year: year.value,
-						sampleId,
-						type: labelOption.value,
-						username,
-						time
-					});
+						const { features, ok, message, tile, selectedSample } = await agriSample({
+							region: region.value,
+							year: year.value,
+							sampleId,
+							type: labelOption.value,
+							username,
+							time
+						});
 
-					if (ok) {
+						if (!ok) {
+							throw new Error(message);
+						}
+
 						// Set the feature of agri sample
-						setAgriSampleId(sampleId);
 						setAgriFeatures(features);
-						setAgriMax(features.features.length);
+						setAgriMax(features.features.length - 1);
 						setAgriMin(0);
-						setSelectedSampleAgri({ value: 0, label: 0 });
-						setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));
+						setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));''
+
+						// Set the current sample
+						if (selectedSample) {
+							setSelectedSampleAgri({ value: selectedSample, label: selectedSample });
+						} else {
+							setSelectedSampleAgri({ value: 0, label: 0 });
+						}
 						
 						// Push the options to the sample agri set
 						const listOptions = Array.from(sampleAgriList);
@@ -300,16 +269,16 @@ export default function Labelling(props){
 						Agri.setUrl(tile);
 
 						// Set loading
-						setMessage(undefined);
-						setMessageColor('blue');
-					} else {
+						setMessage('Sample generated');
+						setMessageColor('green');
+					} catch (error) {
 						// Set loading
 						setMessage(message);
 						setMessageColor('red');
-					};
-
-					// Disable some button
-					toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+					} finally {
+						// Disable some button
+						toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+					}
 				}}>Generate sample</button>
 				
 				<div className="flexible space">
@@ -319,25 +288,83 @@ export default function Labelling(props){
 						isDisabled={labellingDisabled}
 						onChange={async value => {
 							setSampleAgriSet(value);
-							await loadSampleAgri({ sampleId: value.value });
+							
+							try {
+								// Show sample loading message
+								setMessage('Loading sample...');
+								setMessageColor('blue');
+					
+								// Pause the button
+								toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
+								const { features, tile, ok, message, selectedSample } = await loadAgri({ sampleId: value.value });
+					
+								if (!ok) {
+									throw new Error(message);
+								};
+					
+								// Set Agri parameter
+								Agri.setUrl(tile);	
+								setAgriFeatures(features);
+								setAgriMax(features.features.length - 1);
+								setAgriMin(0);
+								setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));
+
+								// Set the current sample
+								if (selectedSample) {
+									setSelectedSampleAgri({ value: selectedSample, label: selectedSample });
+								} else {
+									setSelectedSampleAgri({ value: 0, label: 0 });
+								}
+					
+								// Hide message
+								setMessage('Sample loaded');
+								setMessageColor('green');
+							} catch (err) {
+								setMessage(err.message);
+								setMessageColor('red');
+								return null;
+							} finally {
+								// Enable some button
+								toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+							}
 						}}
 						placeholder={'Select or generate sample'}
 						className="select-menu"
 						style={{ flex: 4 }}
 					/>
 					<button style={{ flex: 1 }} className="button-parameter material-icons" disabled={sampleAgriDisabled} onClick={async () => {
-						setMessage('Saving...');
-						setMessageColor('blue');
+						try {
+							setMessage('Saving...');
+							setMessageColor('blue');
 
-						toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
+							toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
 
-						// Save the data to the database
-						await saveAgriSample({ features: agriFeatures, time: new Date().getTime(), sampleId: agriSampleId });
+							// Set the new data
+							const features = new Object(agriFeatures);
+							features.properties = {
+								region: region.value,
+								year: year.value,
+								selectedSample: selectedSampleAgri.value,
+								sampleId: agriSampleId,
+								sampleName: agriSampleId
+							}
 
-						setMessage(undefined);
-						setMessageColor('blue');
+							// Save the data to the database
+							const { ok, message } = await saveAgriSample({ features, time: new Date().getTime(), sampleId: agriSampleId });
 
-						toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+							// If the process is not okay
+							if (!ok) {
+								throw new Error(message);
+							}
+
+							setMessage('Sample saved');
+							setMessageColor('green');
+						} catch (error) {
+							setMessage(error.message);
+							setMessageColor('red');
+						} finally {
+							toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+						}						
 					}}>&#xe161;</button>
 
 					<a className="flexible vertical" href={agriLink} download={`${agriSampleId}.geojson`} disabled={sampleAgriDisabled}>
@@ -380,21 +407,40 @@ export default function Labelling(props){
 					onChange={async value => {
 						setAgriCategory(value);
 
-						// Create new data when lc data change
-						const newSample = agriFeatures.features.map((feat, index) => {
-							if (index === selectedSampleAgri.value){
-								feat.properties.agri = value.value;
+						// Try to save the sample
+						try {
+							// Create new data when lc data change
+							const newSample = agriFeatures.features.map((feat, index) => {
+								if (index === selectedSampleAgri.value){
+									feat.properties.agri = value.value;
+								};
+								return feat
+							});
+
+							// Set the new data
+							const features = new Object(agriFeatures);
+							features.properties = {
+								region: region.value,
+								year: year.value,
+								selectedSample: selectedSampleAgri.value,
+								sampleId: agriSampleId,
+								sampleName: agriSampleId
 							};
-							return feat
-						});
 
-						// Set the new data
-						const newFeatures = new Object(agriFeatures);
-						newFeatures.features = newSample;
-						setAgriFeatures(newFeatures);
+							// save the data
+							setAgriFeatures(features);
 
-						// Save the data to the database
-						await saveAgriSample({ features: newFeatures, time: new Date().getTime(), sampleId: agriSampleId });
+							// Save the data to the database
+							const { ok, message } = await saveAgriSample({ features, time: new Date().getTime(), sampleId: agriSampleId });
+
+							// Send message if the saved is failed
+							if (!ok) {
+								throw new Error(message);
+							}
+						} catch (error) {
+							setMessage(error.message);
+							setMessageColor('red');
+						}
 					}}
 					isDisabled={sampleAgriDisabled}
 					className="select-menu"

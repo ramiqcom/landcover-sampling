@@ -37,6 +37,15 @@ export default function Validation(props){
 	// Sample link for download
 	const [ sampleLink, setSampleLink ] = useState(undefined);
 
+	// Do something when the sample set changed
+	useEffect(() => {
+		if (selectedSampleSet) {
+			// Set the sample name and id
+			setSampleName(selectedSampleSet.label);
+			setSampleId(selectedSampleSet.value);
+		}
+	}, [ selectedSampleSet ]);
+
 	// Do something and selected sample change
 	useEffect(() => {
 		if (selectedSample) {
@@ -102,12 +111,10 @@ export default function Validation(props){
 						const id = `${username}_${region.value}_${year.value}_${time}`;
 
 						// Generate sampel from earth engine
-						const { features, ok, message, tile } = await createSample({ year: year.value, region: region.value, sampleSize, sampleId: id, username, time });
+						const { features, ok, message, tile, selectedSample } = await createSample({ year: year.value, region: region.value, sampleSize, sampleId: id, username, time });
 
 						// Check if the process is success
 						if (!ok) {
-							setMessage(message);
-							setMessageColor('red');
 							throw new Error(message);
 						}
 
@@ -127,9 +134,6 @@ export default function Validation(props){
 						setMinSample(sampleIdSort[0]);
 						setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
 
-						// Selected
-						changePointSample(features, 0, setSelectedSampleFeatures);
-
 						// New sample option
 						const option = { value: id, label: id };
 
@@ -138,6 +142,9 @@ export default function Validation(props){
 
 						// Select the option
 						setSelectedSampleSet(option);
+
+						// Selected
+						setSelectedSample({ value: selectedSample, label: selectedSample });
 
 						// Delete message
 						setMessage(undefined);
@@ -175,17 +182,11 @@ export default function Validation(props){
 							// Disabled button until the operation is done
 							toggleFeatures(true, [ setSampleSelectionDisabled ]);
 
-							// Set the sample name and id
-							setSampleName(value.label);
-							setSampleId(value.value);
-
 							// Load the sample from the server
-							const { features, ok, message, tile } = await loadSample({ sampleId: value.value });
+							const { features, ok, message, tile, selectedSample } = await loadSample({ sampleId: value.value });
 
 							// If the result is not okay throw error
 							if (!ok) {
-								setMessage(message);
-								setMessageColor('red');
 								throw new Error(message);
 							}
 
@@ -205,11 +206,15 @@ export default function Validation(props){
 							setMinSample(sampleIdSort[0]);
 							setMaxSample(sampleIdSort[sampleIdSort.length - 1]);
 
-							// Change selected points
-							changePointSample(features, 0, setSelectedSampleFeatures);
-
 							// Set loading to null again
 							setMessage(undefined);
+
+							// Selected
+							if (selectedSample) {
+								setSelectedSample({ value: selectedSample, label: selectedSample });
+							} else {
+								setSelectedSample({ value: 0, label: 0 });
+							}
 						} catch (error) {
 							// Set message
 							setMessage(error.message);
@@ -226,50 +231,84 @@ export default function Validation(props){
 				/>
 
 				<button className="button-parameter" style={{ flex: 1 }} disabled={sampleSelectionDisabled} onClick={async () => {
-					// Delete the sample in the database
-					await deleteSample({ sampleId });
-					
-					// Change the new sample options where it isnt deleted
-					const newOptions = sampleSet.filter(dict => dict.value !== sampleId);
-					setSampleSet(newOptions);
-					
-					// Delete features in the map
-					Features.clearLayers();
-					Point.clearLayers();
+					try {
+						// Delete the sample in the database
+						const { ok, message } = await deleteSample({ sampleId });
+						if (!ok) {
+							throw new Error(message);
+						}
+						
+						// Change the new sample options where it isnt deleted
+						const newOptions = sampleSet.filter(dict => dict.value !== sampleId);
+						setSampleSet(newOptions);
+						
+						// Delete features in the map
+						Features.clearLayers();
+						Point.clearLayers();
 
-					// Set the sample name, id, and selected to none
-					if (newOptions.length){
-						setSelectedSampleSet(newOptions[0]);
-					} else {
-						setSelectedSampleSet(undefined);
+						// Set the sample name, id, and selected to none
+						if (newOptions.length){
+							setSelectedSampleSet(newOptions[0]);
+						} else {
+							setSelectedSampleSet(undefined);
+						}
+					} catch (error) {
+						setMessage(error.message);
+						setMessageColor('red');
 					}
+					
 				}}>-</button>
 
 				<button className='button-parameter material-icons' disabled={sampleSelectionDisabled} style={{ flex: 1 }} onClick={async () => {
-					// Set the message when saving sample
-					setMessage('Saving samples...');
-					setMessageColor('blue');
+					try {
+						// Set the message when saving sample
+						setMessage('Saving samples...');
+						setMessageColor('blue');
 
-					// Disabled button
-					toggleFeatures(true, [
-						setSampleGenerationDisabled,
-						setSampleSelectionDisabled,
-						setRegionYearDisabled,
-					]);
+						// Disabled button
+						toggleFeatures(true, [
+							setSampleGenerationDisabled,
+							setSampleSelectionDisabled,
+							setRegionYearDisabled,
+						]);
 
-					// Update the sample in the server
-					await updateSample({ sampleId, features: sampleFeatures, time: new Date().getTime() });
+						// Feature collection assign
+						const features = {
+							type: 'FeatureCollection',
+							features: sampleFeatures.features,
+							properties: {
+								region,
+								year,
+								sampleId,
+								sampleName: sampleName || sampleId,
+								selectedSample: selectedSample.value
+							}
+						};
 
-					// Enable button again
-					toggleFeatures(false, [
-						setSampleGenerationDisabled,
-						setSampleSelectionDisabled,
-						setRegionYearDisabled,
-					]);
+						// Set the state of features
+						setSampleFeatures(features);
 
-					// Set the message when saving sample
-					setMessage('Sample successfully saved');
-					setMessageColor('green');
+						// Update the sample in the server
+						const { ok, message } = await updateSample({ sampleId, features, time: new Date().getTime() });
+						if (!ok) {
+							throw new Error(message);
+						}
+
+						// Set the message when saving sample
+						setMessage('Sample successfully saved');
+						setMessageColor('green');
+					} catch (error) {
+						// Set the message when saving sample
+						setMessage(error.message);
+						setMessageColor('red');
+					} finally {
+						// Enable button again
+						toggleFeatures(false, [
+							setSampleGenerationDisabled,
+							setSampleSelectionDisabled,
+							setRegionYearDisabled,
+						]);
+					} 
 				}}>&#xe161;</button>
 
 				<a className="flexible vertical" href={sampleLink} download={`${sampleId}.geojson`} disabled={sampleSelectionDisabled}>
@@ -295,7 +334,16 @@ export default function Validation(props){
 						setSampleSet(options);
 
 						// Change the sample name in the database
-						await updateSampleName({ sampleId, sampleName });
+						try {
+							const { ok, message } = await updateSampleName({ sampleId, sampleName });
+							if (!ok) {
+								throw new Error(message);
+							}
+						} catch (error) {
+							setMessage(error.message);
+							setMessageColor('red');
+						}
+						
 					}}
 				/>	
 			</div>
@@ -334,32 +382,44 @@ export default function Validation(props){
 					/// Change the lc value
 					setLcSelect(value);
 					
-					// Current all features
-					const currentFeatures = sampleFeatures.features.map((feat, index) => {
-						if (index === selectedSample.value) {
-							feat.properties.validation = value.value;
-							setSelectedSampleFeatures(feat);
+					try {
+						// Current all features
+						const currentFeatures = sampleFeatures.features.map((feat, index) => {
+							if (index === selectedSample.value) {
+								feat.properties.validation = value.value;
+								setSelectedSampleFeatures(feat);
+							};
+							return feat;
+						});
+			
+						// Feature collection assign
+						const features = {
+							type: 'FeatureCollection',
+							features: currentFeatures,
+							properties: {
+								region,
+								year,
+								sampleId,
+								sampleName: sampleName || sampleId,
+								selectedSample: selectedSample.value
+							}
 						};
-						return feat;
-					});
-		
-					// Feature collection assign
-					const features = {
-						type: 'FeatureCollection',
-						features: currentFeatures,
-						properties: {
-							region,
-							year,
-							sampleId,
-							sampleName: sampleName || sampleId
-						}
-					};
 
-					// Update the sample in the server
-					await updateSample({ sampleId, features, time: new Date().getTime() });
-		
-					// Set the current sample features
-					setSampleFeatures(features);
+						// Set the current sample features
+						setSampleFeatures(features);
+
+						// Update the sample in the server
+						const { ok, message } = await updateSample({ sampleId, features, time: new Date().getTime() });
+
+						// If the result is not okay, throw error
+						if (!ok) {
+							throw new Error(message);
+						}
+					} catch (error) {
+						setMessage(error.message);
+						setMessageColor('red');
+					}
+					
 				}}
 				className='select-menu'
 				isDisabled={sampleSelectionDisabled}

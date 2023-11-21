@@ -99,13 +99,22 @@ function LayerCheckbox(prop) {
 		setLayerValidationDisplay('none');
 		setLayerLabelDisplay('none');
 		
+		AgriPoint.setStyle({ opacity: 0 });
+		Agri.setOpacity(0);
+		Point.setStyle({ opacity: 0 });
+		FeaturesValidation.setOpacity(0);
+
 		switch (selectedMenu) {
 			case 'validation':
 			case 'assessment':
 				setLayerValidationDisplay('flex');
+				Point.setStyle({ opacity: 1 });
+				FeaturesValidation.setOpacity(1);
 				break;
 			case 'labelling':
 				setLayerLabelDisplay('flex');
+				AgriPoint.setStyle({ opacity: 1 });
+				Agri.setOpacity(1);
 				break;
 			default:
 				setLayerValidationDisplay('none');

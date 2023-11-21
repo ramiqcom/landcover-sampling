@@ -22,28 +22,33 @@ for (let i = 0; i <= regionNames.length - 1; i++){
  * @returns {Promise<{ url: URL, geojson: GeoJSON } | { message: String }>}
  */
 export async function tile(body){
-	// Run
-	await auth(key);
-	await init(null, null);
+	try {
+		// Run
+		await auth(key);
+		await init(null, null);
 
-	// Payload
-	const { region, year, bands } = body;
+		// Payload
+		const { region, year, bands } = body;
 
-	// Get the new image
-	const image = await compositeImage(region, year);
+		// Get the new image
+		const image = await compositeImage(region, year);
 
-	// Visualized image
-	const visualized = visual(image, bands);
+		// Visualized image
+		const visualized = visual(image, bands);
 
-	// Get visualized data
-	const [ obj, err ] = await mapid({ image: visualized });
+		// Get visualized data
+		const [ obj, err ] = await mapid({ image: visualized });
 
-	// Conditional if failed
-	if (err) {
-		return { message: err, ok: false };
-	} else {
+		// If get tile error return error
+		if (err) {
+			throw new Error(err);
+		}
+
+		// Return object if succedd
 		return { url: obj.urlFormat, ok: true };
-	};
+	} catch (error) {
+		return { message: error.message, ok: false };
+	}
 }
 
 /**

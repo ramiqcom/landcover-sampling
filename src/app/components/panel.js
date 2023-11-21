@@ -544,8 +544,6 @@ function Selection(props){
 
 					// If the process error tile if it is error
 					if (!ok) {
-						setMessage(message);
-						setMessageColor('red');
 						throw new Error(message);
 					}
 									
