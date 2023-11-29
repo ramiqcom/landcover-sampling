@@ -1,17 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Map, Grid, Labelled, Agri, AgriPoint } from "./map";
 import { squareGrid, bbox } from "@turf/turf";
 import { agriSample, saveAgriSample, loadAgri } from '../server/sampleServer';
 import roi from './roi.json' assert { type: 'json' };
 import Select from "react-select";
 import { toggleFeatures } from "./utilities";
+import { Context } from "../page";
 
-export default function Labelling(props){
+export default function Labelling(){
 	const { 
 		labellingDisplay, region, year, username, selectedMenu, setMessage, setMessageColor,
 		sampleAgriList, setSampleAgriList,
 		agriFeatures, setAgriFeatures
-	} = props;
+	} = useContext(Context);
 
 	// Labelling option
 	const [ labelOptions, setLabelOptions ] = useState([

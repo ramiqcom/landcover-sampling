@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Basemap as base, Tile, FeaturesValidation, Features, Point, Agri, Labelled, AgriPoint, Grid } from './map';
+import { Context } from '../page';
 
-export default function Layers(prop){
+export default function Layers(){
 	return (
 		<div id='layers' className="flexible vertical space">
 			<Basemap />
-			<LayerCheckbox {...prop} />
+			<LayerCheckbox />
 		</div>	
 	)
 }
@@ -62,7 +63,7 @@ function Basemap() {
 }
 
 // Layer checkbox
-function LayerCheckbox(prop) {
+function LayerCheckbox() {
 	const {
 		imageCheckboxDisabled,
     sampleCheckboxDisabled,
@@ -77,7 +78,7 @@ function LayerCheckbox(prop) {
 		setSampleCheckboxDisabled,
 		agriFeatures,
 		sampleFeatures
-	} = prop;
+	} = useContext(Context);
 
 
 	// Data opacity

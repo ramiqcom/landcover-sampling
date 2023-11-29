@@ -1,5 +1,5 @@
 // Import some packages
-import { useEffect, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import Select from 'react-select';
 import Login from './login';
 import Validation from './validation';
@@ -10,59 +10,36 @@ import { Map, Tile } from './map';
 import { tile } from '../server/tileServer';
 import dataRegion from './roi.json' assert { type: 'json' }
 import { saveProject, loadProject, deleteProject } from '../server/projectServer';
+import { Context } from '../page';
 
 // Panel function as app handler
-export default function Panel(prop){
-	const [ loginPage, setLoginPage ] = useState('flex');
-	const [ appState, setAppState ] = useState('none');
-	const [ projectList, setProjectList ] = useState([]);
-	const [ project, setProject ] = useState(undefined);
-	const [ projectId, setProjectId ] = useState(undefined);
-	const [ username, setUsername ] = useState(undefined);
-	const [ sampleSet, setSampleSet ] = useState([]);
-	const [ selectedSample, setSelectedSample ] = useState(undefined);
-	const [ sampleId, setSampleId ] = useState(undefined);
-	const [ sampleAgriList, setSampleAgriList ] = useState([]);
-
-	// List of state
-	const states = {
-		loginPage, setLoginPage,
-		appState, setAppState,
-		projectList, setProjectList,
-		project, setProject,
-		projectId, setProjectId,
-		username, setUsername,
-		sampleSet, setSampleSet,
-		selectedSample, setSelectedSample,
-		sampleId, setSampleId,
-		sampleAgriList, setSampleAgriList,
-		...prop
-	};
-
+export default function Panel(){
 	return (
 		<div id='panel' className="flexible vertical space">
 			<div id='title-panel'>
 				Land cover sampling
 			</div>
 
-			<Login {...states} />
-			<Application {...states} />
+			<Login />
+			<Application />
 
 		</div>
 	)
 }
 
 // Application
-function Application(props){
+function Application(){
+	const { appState } = useContext(Context);
+
 	return (
-		<div id='application' className='flexible vertical space' style={{ display: props.appState }}>
-			<Project {...props} />
+		<div id='application' className='flexible vertical space' style={{ display: appState }}>
+			<Project />
 		</div>
 	)
 }
 
 // Project select
-function Project(props){
+function Project(){
 	const { 
 		projectList, 
 		project, 
@@ -76,84 +53,32 @@ function Project(props){
 		setSelectedSample,
 		setProjectList,
 		setSelectedMenu,
-		sampleFeatures, setSampleFeatures
-	} = props;
-
-	// Save project
-	const [ saveProjectDisabled, setSaveProjectDisabled ] = useState(true);
-
-	// Region year disabled
-	const [ regionYearDisabled, setRegionYearDisabled ] = useState(false);
-
-	// Image and sample parameter
-	const [ parameterDisabled, setParameterDisabled ] = useState(false);
-
-	// Project name
-	const [ projectName, setProjectName ] = useState(undefined);
-
-	// Project name disabled
-	const [ projectNameDisabled, setProjectNameDisabled ] = useState(false);
-
-	// New project button disabled
-	const [ createProjectDisabled, setCreateProjectDisabled ] = useState(false);
-
-	// Years selection
-	let years = [ 2012, 2017, 2022 ];
-	years = years.map(year => new Object({ label: year, value: year }));
-
-	// Region list
-	let regions = Object.keys(dataRegion);
-	regions = regions.map(region => new Object({ label: region, value: region }));
-
-	// Year state
-	const [ year, setYear ] = useState(years[2]);
-
-	// Region state
-	const [ region, setRegion ] = useState(regions[0]);
-
-	// Bands state
-	const [ red, setRed ] = useState({ value: 'B5', label: 'B5' });
-	const [ green, setGreen ] = useState({ value: 'B6', label: 'B6' });
-	const [ blue, setBlue ] = useState({ value: 'B7', label: 'B7' });
-
-	// Messages
-	const [ message, setMessage ] = useState(undefined);
-
-	// Message color
-	const [ messageColor, setMessageColor ] = useState('blue');
-
-	// Image selection display
-	const [ selectionDisplay, setSelectionDisplay ] = useState('flex');
-
-	// Sampling display
-	const [ samplingDisplay, setSamplingDisplay ] = useState('none');
-
-	// Labelling display
-	const [ labellingDisplay, setLabellingDisplay ] = useState('none');
-
-	// Assessment display
-	const [ assessmentDisplay, setAssessmentDisplay ] = useState('none')
-
-	// Image and sampling button
-	const [ imageButtonDisabled, setImageButtonDisabled ] = useState(true);
-	const [ samplingButtonDisabled, setSamplingButtonDisabled ] = useState(false);
-	const [ assessmentButtonDisabled, setAssessmentButtonDisabled ] = useState(false);
-	const [ labellingButtonDisabled, setLabellingButtonDisabled ] = useState(false);
-
-
-	// Sample parameter disabled button
-	const [ sampleGenerationDisabled, setSampleGenerationDisabled ] = useState(false);
-	const [ sampleSelectionDisabled, setSampleSelectionDisabled ] = useState(true);
-
-	// Selected sample set
-	const [ selectedSampleSet, setSelectedSampleSet ] = useState(undefined);
-
-	// List of samples in the set
-	const [ sampleList, setSampleList ] = useState([]);
-
-	// Image url
-	const [ imageUrl, setImageUrl ] = useState(undefined);
-	const [ imageGeoJson, setImageGeoJson ] = useState(undefined);
+		saveProjectDisabled, setSaveProjectDisabled,
+		regionYearDisabled, setRegionYearDisabled,
+		setParameterDisabled,
+		projectName, setProjectName,
+		projectNameDisabled, setProjectNameDisabled,
+		createProjectDisabled, setCreateProjectDisabled,
+		years, year, setYear,
+		regions, region, setRegion,
+		red, setRed,
+		green, setGreen,
+		blue, setBlue,
+		message, setMessage,
+		messageColor, setMessageColor,
+		setSelectionDisplay,
+		setSamplingDisplay,
+		setLabellingDisplay,
+		setAssessmentDisplay,
+		imageButtonDisabled, setImageButtonDisabled,
+		samplingButtonDisabled, setSamplingButtonDisabled,
+		assessmentButtonDisabled, setAssessmentButtonDisabled,
+		labellingButtonDisabled, setLabellingButtonDisabled,
+		setSampleGenerationDisabled,
+		setSelectedSampleSet,
+		setImageUrl,
+		setImageGeoJson
+	} = useContext(Context);
 
 	// Load project function
 	async function loadProjectData(projectId){
@@ -269,35 +194,6 @@ function Project(props){
 			setSaveProjectDisabled(true);
 		};
 	}, [ project, projectName ]);
-
-	// State list
-	const states = {
-		projectName, setProjectName,
-		parameterDisabled, setParameterDisabled,
-		year, setYear,
-		region, setRegion,
-		red, setRed,
-		green, setGreen,
-		blue, setBlue,
-		message, setMessage,
-		messageColor, setMessageColor,
-		selectionDisplay, setSelectionDisplay,
-		samplingDisplay, setSamplingDisplay,
-		imageButtonDisabled, setImageButtonDisabled,
-		samplingButtonDisabled, setSamplingButtonDisabled,
-		regionYearDisabled, setRegionYearDisabled,
-		sampleGenerationDisabled, setSampleGenerationDisabled,
-		sampleSelectionDisabled, setSampleSelectionDisabled,
-		assessmentDisplay, setAssessmentDisplay,
-		assessmentButtonDisabled, setAssessmentButtonDisabled,
-		sampleFeatures, setSampleFeatures,
-		imageUrl, setImageUrl,
-		imageGeoJson, setImageGeoJson,
-		selectedSampleSet, setSelectedSampleSet,
-		sampleList, setSampleList,
-		labellingDisplay, setLabellingDisplay,
-		...props
-	};
 
 	return (
 		<>
@@ -443,10 +339,10 @@ function Project(props){
 					</div>
 					
 					<div id='menu' className='flexible-space'>
-						<Selection {...states} />
-						<Labelling {...states} />
-						<Validation {...states} />
-						<Assessment {...states} />
+						<Selection />
+						<Labelling />
+						<Validation />
+						<Assessment />
 					</div>
 				</div>
 
@@ -460,7 +356,7 @@ function Project(props){
 }
 
 // Data selection
-function Selection(props){
+function Selection(){
 	// Parameter disabled
 	const { 
 		parameterDisabled, setParameterDisabled,
@@ -476,7 +372,7 @@ function Selection(props){
 		setImageCheckboxDisabled,
 		imageUrl, setImageUrl,
 		imageGeoJson, setImageGeoJson 
-	} = props;
+	} = useContext(Context);
 
 	// Useeffect if the image url changed
 	useEffect(() => {

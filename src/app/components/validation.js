@@ -1,13 +1,14 @@
 // Import packages
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import Select from 'react-select';
 import { toggleFeatures } from "./utilities";
 import { lulcLabel, lulcValue, lulcValueLabel } from './lulc';
 import { createSample, loadSample, updateSample, updateSampleName, deleteSample } from '../server/sampleServer';
 import { Map, Features, Point, FeaturesValidation } from "./map";
+import { Context } from "../page";
 
 // Validation components
-export default function Validation(props){
+export default function Validation(){
 	const { 
 		samplingDisplay,
 		year, region,
@@ -22,7 +23,7 @@ export default function Validation(props){
 		selectedSample, setSelectedSample,
 		selectedSampleSet, setSelectedSampleSet,
 		sampleList, setSampleList,
-	} = props;
+	} = useContext(Context);
 
 	const [ sampleSize, setSampleSize ] = useState(10);
 	const [ selectedSampleFeatures, setSelectedSampleFeatures ] = useState(undefined);

@@ -1,8 +1,9 @@
 
 // Import some packages
 import * as tf from '@tensorflow/tfjs';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { lulcValueScaled, lulcValue } from './lulc';
+import { Context } from '../page';
 
 // Assessment components
 export default function Assessment(prop){
@@ -10,7 +11,7 @@ export default function Assessment(prop){
 		assessmentDisplay, sampleFeatures,
 		setMessage, setMessageColor,
 		cfDisplay, setCfDisplay, setCfData
-	} = prop;
+	} = useContext(Context);
 
 	// Multiple state
 	const [ confusionMatrixButtonDisabled, setConfusionMatrixButtonDisabled ] = useState(true);

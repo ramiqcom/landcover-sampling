@@ -1,12 +1,13 @@
 // Import packages
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import loginServer from '../server/loginServer';
+import { Context } from '../page';
 
-export default function Login(props){
+export default function Login(){
 	const { 
 		setAppState, setLoginPage, loginPage, username, setUsername,
 		setSampleSet, setProjectList, setSampleAgriList
-	} = props;
+	} = useContext(Context);
 
 	const [ password, setPassword ] = useState(undefined);
 	const [ message, setMessage ] = useState(undefined);
