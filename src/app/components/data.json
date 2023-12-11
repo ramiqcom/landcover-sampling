@@ -50,7 +50,7 @@
 		"palette": "burlywood"
 	},
 	"palmoil": {
-		"label": "Palm oil",
+		"label": "Oil palm",
 		"value": 80,
 		"palette": "orangered"
 	},
@@ -70,7 +70,7 @@
 		"palette": "gold"
 	},
 	"timber": {
-		"label": "Timber",
+		"label": "Timber plantation",
 		"value": 102,
 		"palette": "sienna"
 	},
@@ -83,6 +83,11 @@
 		"label": "Pond",
 		"value": 111,
 		"palette": "lavender"
+	},
+	"snow": {
+		"label": "Snow/ice",
+		"value": 200,
+		"palette": "azure"
 	},
 	"none": {
 		"label": "No data",

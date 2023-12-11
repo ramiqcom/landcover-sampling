@@ -185,29 +185,18 @@ export async function agriSample(body){
 		// Composite image
 		const image = await compositeImage(region, year);
 
-		// NBR
-		const nbr = image.expression('NBR = (NIR - SWIR2) / (NIR + SWIR2)', {
-			NIR: image.select('B5'),
-			SWIR2: image.select('B7'),
-		});
+		// Land cover
+		const idLc = `projects/${process.env.IMAGE_PROJECT}/assets/${process.env.LULC_COLLECTION}/${region}_${year}`;
 
-		// Group
-		const group = ee.Image(0).where(nbr.lte(0.1), 1)
-			.where(nbr.gt(0.1).and(nbr.lte(0.2)), 2)
-			.where(nbr.gt(0.2).and(nbr.lte(0.3)), 3)
-			.where(nbr.gt(0.3).and(nbr.lte(0.4)), 4)
-			.where(nbr.gt(0.4).and(nbr.lte(0.5)), 5)
-			.where(nbr.gt(0.5).and(nbr.lte(0.6)), 6)
-			.where(nbr.gt(0.6).and(nbr.lte(0.7)), 7)
-			.where(nbr.gt(0.7).and(nbr.lte(0.8)), 8)
-			.where(nbr.gt(0.8).and(nbr.lte(0.9)), 9)
-			.where(nbr.gt(0.9), 9)
-			.selfMask()
-			.rename('group');
+		// Load land cover image
+		const lc = ee.Image(idLc);
+
+		// Land cover only low level
+		const lowLevel = lc.eq(40).or(lc.eq(50)).selfMask();
 
 		// Sample
-		const sample = group.stratifiedSample({
-			numPoints: 500,
+		const sample = lowLevel.stratifiedSample({
+			numPoints: 2500,
 			region: image.geometry(),
 			geometries: true,
 			scale: 300
