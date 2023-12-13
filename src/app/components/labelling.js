@@ -1,7 +1,7 @@
 import { useEffect, useState, useContext } from "react";
 import { Map, Grid, Labelled, Agri, AgriPoint } from "./map";
 import { squareGrid, bbox } from "@turf/turf";
-import { agriSample, saveAgriSample, loadAgri } from '../server/sampleServer';
+import { agriSample, saveAgriSample, loadAgri, deleteAgri } from '../server/sampleServer';
 import roi from './roi.json' assert { type: 'json' };
 import Select from "react-select";
 import { toggleFeatures } from "./utilities";
@@ -184,6 +184,55 @@ export default function Labelling(){
 		};
 	}, [ agriFeatures ]);
 
+	/**
+	 * Function to change the sample of agri data
+	 * @param {{ label: string, value: string}} value 
+	 * @returns
+	 */
+	async function setAgriSample(value) {
+		try {
+			// Set the agri sample set
+			setSampleAgriSet(value);
+
+			// Show sample loading message
+			setMessage('Loading sample...');
+			setMessageColor('blue');
+	
+			// Pause the button
+			toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
+			const { features, tile, ok, message, selectedSample } = await loadAgri({ sampleId: value.value });
+	
+			if (!ok) {
+				throw new Error(message);
+			};
+	
+			// Set Agri parameter
+			Agri.setUrl(tile);	
+			setAgriFeatures(features);
+			setAgriMax(features.features.length - 1);
+			setAgriMin(0);
+			setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));
+	
+			// Set the current sample
+			if (selectedSample) {
+				setSelectedSampleAgri({ value: selectedSample, label: selectedSample });
+			} else {
+				setSelectedSampleAgri({ value: 0, label: 0 });
+			}
+	
+			// Hide message
+			setMessage('Sample loaded');
+			setMessageColor('green');
+		} catch (err) {
+			setMessage(err.message);
+			setMessageColor('red');
+			return null;
+		} finally {
+			// Enable some button
+			toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+		}
+	}
+
 	return (
 		<div id="labelling" className='flexible vertical space' style={{ display: labellingDisplay }}>
 			<Select 
@@ -306,46 +355,7 @@ export default function Labelling(){
 						value={sampleAgriSet}
 						isDisabled={labellingDisabled}
 						onChange={async value => {
-							setSampleAgriSet(value);
-							
-							try {
-								// Show sample loading message
-								setMessage('Loading sample...');
-								setMessageColor('blue');
-					
-								// Pause the button
-								toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
-								const { features, tile, ok, message, selectedSample } = await loadAgri({ sampleId: value.value });
-					
-								if (!ok) {
-									throw new Error(message);
-								};
-					
-								// Set Agri parameter
-								Agri.setUrl(tile);	
-								setAgriFeatures(features);
-								setAgriMax(features.features.length - 1);
-								setAgriMin(0);
-								setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));
-
-								// Set the current sample
-								if (selectedSample) {
-									setSelectedSampleAgri({ value: selectedSample, label: selectedSample });
-								} else {
-									setSelectedSampleAgri({ value: 0, label: 0 });
-								}
-					
-								// Hide message
-								setMessage('Sample loaded');
-								setMessageColor('green');
-							} catch (err) {
-								setMessage(err.message);
-								setMessageColor('red');
-								return null;
-							} finally {
-								// Enable some button
-								toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
-							}
+							await setAgriSample(value);
 						}}
 						placeholder={'Select or generate sample'}
 						className="select-menu"
@@ -385,6 +395,45 @@ export default function Labelling(){
 							toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
 						}						
 					}}>&#xe161;</button>
+
+					<button className="button-parameter material-icons" disabled={sampleAgriDisabled} style={{ flex: 1 }} onClick={async () => {
+						try {
+							// Disable option first
+							toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
+
+							// Set message
+							setMessage('Deleting sample');
+							setMessageColor('blue');
+							
+							// Filter the sample list to only the one not deleted
+							const newList = sampleAgriList.filter(obj => obj !== sampleAgriSet);
+
+							// Change the sample to the first on the on the list
+							await setAgriSample(newList[0]);
+
+							// Set the new sample list without the deleted one
+							setSampleAgriList(newList);
+							
+							// try to delete the sample from the server
+							const { ok, message } = await deleteAgri({ sampleId: sampleAgriSet.value });
+
+							// Throw error if failed
+							if (!ok) {
+								throw new Error(message);
+							}
+
+							// If ok then say it is okay
+							setMessage('Sample deleted');
+							setMessageColor('green');
+						} catch (error) {
+							setMessage(error.message);
+							setMessageColor('red');
+						} finally {
+							toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
+						}
+					}}>
+						&#xe872;
+					</button>
 
 					<a className="flexible vertical" href={agriLink} download={`${agriSampleId}.geojson`} disabled={sampleAgriDisabled}>
 						<button style={{ flex: 1 }} className="button-parameter material-icons" disabled={sampleAgriDisabled}>&#xe2c4;</button>

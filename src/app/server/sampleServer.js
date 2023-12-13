@@ -269,7 +269,7 @@ export async function saveAgriSample(body){
 export async function loadAgri(body){
 	// Query sample
 	try {
-			// get sample id
+		// get sample id
 		const { sampleId } = body;
 		const file = await storage.bucket(process.env.BUCKET).file(`sample_labelling/${sampleId}.geojson`).download();
 		const geojson = JSON.parse(file[0].toString());
@@ -291,5 +291,27 @@ export async function loadAgri(body){
 		return { features: geojson, ok: true, tile: obj.urlFormat, selectedSample: geojson.properties.selectedSample };
 	} catch (error) {
 		return { ok: false, message: error.message };
+	}
+}
+
+/**
+ * Delete the agriculture saple
+ * @param {{ sampleId: string }} body 
+ */
+export async function deleteAgri(body){
+	try {
+		// get sample id
+		const { sampleId } = body;
+
+		// Delete sample from database
+		await bigquery.query(`DELETE FROM ${labelTable} WHERE sample_id='${sampleId}'`);
+
+		// Also delete from the bucket
+		await storage.bucket(process.env.BUCKET).file(`sample_labelling/${sampleId}.geojson`).delete();
+
+		// If succed, return ok
+		return { ok: true };
+	} catch (error) {
+		return { ok: false, error: error.message }
 	}
 }
