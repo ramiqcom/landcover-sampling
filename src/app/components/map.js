@@ -72,4 +72,27 @@ export default async function initMap(map) {
 	if (Map.pm.controlsVisible()) {
 		Map.pm.toggleControls();
 	};
+
+	// Popup
+	let popup;
+
+	// When the map is right click it will do
+	// 1. open pop up that show coordinate
+	// 2. copy to clipboard the coordinate
+	Map.on('contextmenu', e => {
+		popup ? popup.close() : null;
+
+		const coor = e.latlng;
+		const word = `${coor.lat}, ${coor.lng}`;
+
+		popup = L.popup({
+			autoClose: true,
+			closeButton: false
+		}).setLatLng(e.latlng)
+			.setContent(`<pre>${word}</pre>`)
+			.addTo(Map)
+			.openOn(Map);
+
+		navigator.clipboard.writeText(word);
+	})
 }
