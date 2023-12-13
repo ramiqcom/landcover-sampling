@@ -180,7 +180,7 @@ export async function agriSample(body){
 		await init(null, null);
 
 		// Parameter
-		const { sampleId, region, year, type, username, time } = body;
+		const { sampleId, region, year, type, username, time, size } = body;
 
 		// Composite image
 		const image = await compositeImage(region, year);
@@ -196,7 +196,7 @@ export async function agriSample(body){
 
 		// Sample
 		const sample = lowLevel.stratifiedSample({
-			numPoints: 2500,
+			numPoints: Math.ceil(size / 2),
 			region: image.geometry(),
 			geometries: true,
 			scale: 300

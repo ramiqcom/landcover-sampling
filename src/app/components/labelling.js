@@ -72,6 +72,9 @@ export default function Labelling(){
 	// Set current agri category
 	const [ agriCategory, setAgriCategory ] = useState(undefined);
 
+	// Sample size agriculture
+	const [ agriSize, setAgriSize ] = useState(5000);
+
 	// Agri choices
 	const [ agriChoices, setAgriChoices ] = useState([
 		{ value: 1, label: 'Agriculture' },
@@ -222,65 +225,80 @@ export default function Labelling(){
 			
 
 			<div className="flexible space vertical" style={{ display: agriDisplay }}>
-				<button className="button-parameter" disabled={labellingDisabled} onClick={async () => {
-					try {
-						// Set loading
-						setMessage('Generating sample...');
-						setMessageColor('blue');
+				<div className="flexible space">
+					<input type="number" max={5000} min={1} placeholder={'1 - 5000'} style={{ width: '40%' }} value={agriSize} onInput={e => {
+						let value = e.target.value;
 
-						// Disable some button
-						toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
-
-						const time = new Date().getTime();
-						const sampleId = `${username}_${labelOption.value}_${region.value}_${year.value}_${time}`;
-
-						const { features, ok, message, tile, selectedSample } = await agriSample({
-							region: region.value,
-							year: year.value,
-							sampleId,
-							type: labelOption.value,
-							username,
-							time
-						});
-
-						if (!ok) {
-							throw new Error(message);
+						if (value > 5000) {
+							value = 5000
+						} else if (value < 1) {
+							value = 1
 						}
 
-						// Set the feature of agri sample
-						setAgriFeatures(features);
-						setAgriMax(features.features.length - 1);
-						setAgriMin(0);
-						setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));''
+						setAgriSize(value);
+					}} />
 
-						// Set the current sample
-						if (selectedSample) {
-							setSelectedSampleAgri({ value: selectedSample, label: selectedSample });
-						} else {
-							setSelectedSampleAgri({ value: 0, label: 0 });
+					<button className="button-parameter" disabled={labellingDisabled} style={{ width: '60%' }} onClick={async () => {
+						try {
+							// Set loading
+							setMessage('Generating sample...');
+							setMessageColor('blue');
+
+							// Disable some button
+							toggleFeatures(true, [ setSampleAgriDisabled, setLabellingDisabled ]);
+
+							const time = new Date().getTime();
+							const sampleId = `${username}_${labelOption.value}_${region.value}_${year.value}_${time}`;
+
+							const { features, ok, message, tile, selectedSample } = await agriSample({
+								region: region.value,
+								year: year.value,
+								sampleId,
+								type: labelOption.value,
+								username,
+								time,
+								size: agriSize
+							});
+
+							if (!ok) {
+								throw new Error(message);
+							}
+
+							// Set the feature of agri sample
+							setAgriFeatures(features);
+							setAgriMax(features.features.length - 1);
+							setAgriMin(0);
+							setSampleNumberAgri(features.features.map((feat, index) => new Object({ value: index, label: index} )));''
+
+							// Set the current sample
+							if (selectedSample) {
+								setSelectedSampleAgri({ value: selectedSample, label: selectedSample });
+							} else {
+								setSelectedSampleAgri({ value: 0, label: 0 });
+							}
+							
+							// Push the options to the sample agri set
+							const listOptions = Array.from(sampleAgriList);
+							listOptions.push({ value: sampleId, label: sampleId  });
+							setSampleAgriList(listOptions);
+							setSampleAgriSet({ value: sampleId, label: sampleId });
+							
+							// Set Agri tile url
+							Agri.setUrl(tile);
+
+							// Set loading
+							setMessage('Sample generated');
+							setMessageColor('green');
+						} catch (error) {
+							// Set loading
+							setMessage(message);
+							setMessageColor('red');
+						} finally {
+							// Disable some button
+							toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
 						}
-						
-						// Push the options to the sample agri set
-						const listOptions = Array.from(sampleAgriList);
-						listOptions.push({ value: sampleId, label: sampleId  });
-						setSampleAgriList(listOptions);
-						setSampleAgriSet({ value: sampleId, label: sampleId });
-						
-						// Set Agri tile url
-						Agri.setUrl(tile);
-
-						// Set loading
-						setMessage('Sample generated');
-						setMessageColor('green');
-					} catch (error) {
-						// Set loading
-						setMessage(message);
-						setMessageColor('red');
-					} finally {
-						// Disable some button
-						toggleFeatures(false, [ setSampleAgriDisabled, setLabellingDisabled ]);
-					}
-				}}>Generate sample</button>
+					}}>Generate sample</button>
+				</div>
 				
 				<div className="flexible space">
 					<Select 
